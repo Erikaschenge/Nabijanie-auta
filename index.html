@@ -856,6 +856,16 @@ const NT_DEFAULT = 0.1154, VT_DEFAULT = 0.1732, BAT_DEFAULT = 77, EFF_DEFAULT = 
 let settings = { nt: NT_DEFAULT, vt: VT_DEFAULT, bat: BAT_DEFAULT, eff: EFF_DEFAULT };
 let records = [];
 let editingId = null;
+let interimCache = {}; // mk -> {soc, odo}
+
+async function loadInterim(mk) {
+  if (interimCache[mk] !== undefined) return interimCache[mk];
+  try {
+    const snap = await getDoc(doc(db, 'config', 'interim_'+mk));
+    interimCache[mk] = snap.exists() ? snap.data() : null;
+  } catch(e) { interimCache[mk] = null; }
+  return interimCache[mk];
+}
 
 // ── SYNC ──
 function setSyncStatus(state, text) {
@@ -1071,7 +1081,7 @@ window.addExterne = async function() {
 };
 
 // ── RENDER OVERVIEW ──
-window.renderOverview = function() {
+window.renderOverview = async function() {
   const mk=document.getElementById('monthFilter').value;
   const recs=filteredRecs(mk);
   document.getElementById('overviewMonthLabel').textContent = mk?mkLabel(mk):'všetky mesiace';
@@ -1147,9 +1157,10 @@ window.renderOverview = function() {
     const firstThis = thisMonthRecs.find(r=>r.socPct!=null);
     const socStartKwh = firstThis ? firstThis.socPct/100*settings.bat : null;
 
-    // načítaj uložené priebežné hodnoty
+    // načítaj priebežné hodnoty z Firebase
     let savedSoc = null, savedOdo = null;
-    try { const s=localStorage.getItem('ev_interim_'+mk); if(s){const p=JSON.parse(s);savedSoc=p.soc;savedOdo=p.odo;} } catch(e){}
+    const interimData = await loadInterim(mk);
+    if (interimData) { savedSoc = interimData.soc; savedOdo = interimData.odo; }
 
     // vypočítaj ak máme dáta
     const interimSoc = savedSoc;
@@ -1276,8 +1287,7 @@ window.renderRecords = function() {
 
 function renderAll() {
   populateSelects();
-  // dáme tick aby DOM stihl updatovať hodnotu selectu
-  setTimeout(()=>{ renderOverview(); renderRecords(); }, 0);
+  setTimeout(async ()=>{ await renderOverview(); renderRecords(); }, 0);
 }
 
 // ── TABS ──
@@ -1452,10 +1462,13 @@ window.importHistoric = async function() {
   alert(`Importovaných ${added} záznamov.`);
 };
 
-window.saveInterim = function(mk) {
+window.saveInterim = async function(mk) {
   const soc = parseInt(document.getElementById('interim_soc_'+mk)?.value)||null;
   const odo = parseInt(document.getElementById('interim_odo_'+mk)?.value)||null;
-  try { localStorage.setItem('ev_interim_'+mk, JSON.stringify({soc,odo})); } catch(e){}
+  try {
+    await setDoc(doc(db, 'config', 'interim_'+mk), {soc, odo});
+    delete interimCache[mk]; // vynúti načítanie z Firebase
+  } catch(e) { alert('Chyba pri ukladaní.'); return; }
   renderOverview();
 };
 
