@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="sk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EV Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@400;500;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#0a0a0b;--bg2:#111113;--bg3:#18181c;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f0;--muted:#666;--muted2:#888;
+  --accent:#b8f567;--accent2:#7dd3fc;--accent3:#f9a8d4;
+  --nt:#86efac;--vt:#fca5a5;--pub:#7dd3fc;--free:#c4b5fd;
+  --font-head:'Syne',sans-serif;--font-mono:'DM Mono',monospace;
+  --r:10px;--r2:16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:var(--font-mono);font-size:13px;min-height:100vh;line-height:1.6}
+.shell{max-width:960px;margin:0 auto;padding:0 20px 80px}
+header{padding:40px 0 32px;border-bottom:.5px solid var(--border);margin-bottom:32px;display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:14px}
+.logo-icon{width:44px;height:44px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px}
+.logo-text h1{font-family:var(--font-head);font-size:22px;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+.logo-text p{font-size:11px;color:var(--muted);margin-top:2px}
+.header-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.header-rates{font-size:11px;color:var(--muted);text-align:right;line-height:1.8}
+.header-rates span{color:var(--muted2)}
+.sync-status{font-size:11px;display:flex;align-items:center;gap:6px}
+.sync-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);flex-shrink:0;transition:background .3s}
+.sync-dot.ok{background:var(--nt)}.sync-dot.err{background:var(--vt)}.sync-dot.loading{background:#fbbf24;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+.tabs{display:flex;gap:4px;margin-bottom:28px;border-bottom:.5px solid var(--border)}
+.tab{padding:9px 16px;font-size:12px;font-family:var(--font-mono);font-weight:500;cursor:pointer;border:none;background:transparent;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-.5px;letter-spacing:.04em;transition:color .15s}
+.tab:hover{color:var(--text)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.section{display:none}.section.active{display:block}
+.metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:24px}
+.metric{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r);padding:16px;position:relative;overflow:hidden}
+.metric::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--accent-line,var(--accent));opacity:.5}
+.metric.c2::before{--accent-line:var(--accent2)}.metric.c3::before{--accent-line:var(--accent3)}.metric.c4::before{--accent-line:#fbbf24}.metric.c5::before{--accent-line:var(--free)}
+.metric .lbl{font-size:10px;letter-spacing:.08em;color:var(--muted);text-transform:uppercase;margin-bottom:8px}
+.metric .val{font-family:var(--font-head);font-size:24px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.metric .sub{font-size:10px;color:var(--muted);margin-top:6px}
+.filter-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.filter-label{font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+select{background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--font-mono);font-size:12px;padding:7px 12px;cursor:pointer;outline:none}
+select:focus{border-color:var(--accent)}
+.card{background:var(--bg2);border:.5px solid var(--border);border-radius:var(--r2);padding:20px 22px;margin-bottom:16px}
+.card-title{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{text-align:left;padding:6px 10px;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);font-weight:400;border-bottom:.5px solid var(--border)}
+td{padding:9px 10px;border-bottom:.5px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}tr:hover td{background:rgba(255,255,255,.02)}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:500;letter-spacing:.04em}
+.b-nt{background:rgba(134,239,172,.12);color:var(--nt);border:.5px solid rgba(134,239,172,.25)}
+.b-vt{background:rgba(252,165,165,.12);color:var(--vt);border:.5px solid rgba(252,165,165,.25)}
+.b-mixed{background:rgba(251,191,36,.12);color:#fbbf24;border:.5px solid rgba(251,191,36,.25)}
+.b-pub{background:rgba(125,211,252,.12);color:var(--pub);border:.5px solid rgba(125,211,252,.25)}
+.b-free{background:rgba(196,181,253,.12);color:var(--free);border:.5px solid rgba(196,181,253,.25)}
+.summary-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+.sum-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:.5px solid var(--border);font-size:12px}
+.sum-row:last-child{border-bottom:none}
+.sum-key{color:var(--muted2)}.sum-val{font-weight:500}
+.sum-val.accent{color:var(--accent);font-size:14px}.sum-val.accent2{color:var(--accent2)}
+.form-grid{display:grid;gap:12px;margin-bottom:14px}
+.form-grid.g2{grid-template-columns:1fr 1fr}.form-grid.g3{grid-template-columns:1fr 1fr 1fr}.form-grid.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field label{display:block;font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.field input,.field select,.field textarea{width:100%;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--r);color:var(--text);font-family:var(--font-mono);font-size:13px;padding:9px 12px;outline:none;transition:border-color .15s}
+.field input:focus,.field select:focus{border-color:var(--accent)}
+.field input::placeholder{color:var(--muted)}
+.nt-preview{background:var(--bg3);border:.5px solid var(--border);border-radius:var(--r);padding:10px 14px;font-size:12px;color:var(--muted2);margin-bottom:16px;min-height:36px;transition:all .2s}
+.nt-preview.has-data{border-color:rgba(184,245,103,.2);color:var(--text)}
+.soc-box{background:rgba(184,245,103,.04);border:.5px solid rgba(184,245,103,.2);border-radius:var(--r);padding:12px 14px;margin-bottom:14px}
+.soc-box .soc-title{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+.soc-toggle{display:flex;gap:8px;margin-bottom:10px}
+.soc-btn{padding:6px 14px;font-size:11px;font-family:var(--font-mono);border-radius:6px;border:.5px solid var(--border2);background:transparent;color:var(--muted2);cursor:pointer;transition:all .15s}
+.soc-btn.active{background:var(--accent);color:#0a0a0b;border-color:var(--accent);font-weight:700}
+.btn-row{display:flex;justify-content:flex-end;gap:10px}
+.btn{padding:9px 20px;font-size:12px;font-family:var(--font-mono);font-weight:500;letter-spacing:.04em;border-radius:var(--r);cursor:pointer;border:.5px solid var(--border2);background:transparent;color:var(--muted2);transition:all .15s}
+.btn:hover{color:var(--text);background:var(--bg3)}
+.btn-accent{background:var(--accent);color:#0a0a0b;border-color:var(--accent);font-weight:700}
+.btn-accent:hover{opacity:.88}
+.btn-danger{color:var(--vt);border-color:transparent;background:transparent;padding:4px 8px;font-size:11px}
+.btn-danger:hover{background:rgba(252,165,165,.08)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-edit{color:var(--muted2);border-color:transparent;background:transparent;padding:4px 8px;font-size:11px}
+.btn-edit:hover{background:var(--bg3);color:var(--text)}
+.info-box{background:rgba(184,245,103,.05);border:.5px solid rgba(184,245,103,.15);border-radius:var(--r);padding:10px 14px;font-size:11px;color:var(--muted2);margin-bottom:16px;line-height:1.7}
+.info-box strong{color:var(--accent);font-weight:500}
+.empty{text-align:center;padding:48px 20px;color:var(--muted);font-size:12px}
+.empty .empty-icon{font-size:32px;margin-bottom:12px}
+.sec-title{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px}
+/* Modal */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal-overlay.open{display:flex}
+.modal{background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r2);padding:24px;width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal-title{font-family:var(--font-head);font-size:16px;font-weight:700;margin-bottom:20px}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+@media(max-width:640px){
+  .metrics{grid-template-columns:1fr 1fr}
+  .form-grid.g3,.form-grid.g4{grid-template-columns:1fr 1fr}
+  .summary-grid{grid-template-columns:1fr}
+  header{flex-direction:column;align-items:flex-start}
+  .header-right{align-items:flex-start}
+}
+@media(max-width:400px){.metrics{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">⚡</div>
+    <div class="logo-text"><h1>EV Tracker</h1><p>evidencia nabíjania elektromobilu</p></div>
+  </div>
+  <div class="header-right">
+    <div class="header-rates">
+      <span>NT</span> 0,1154 €/kWh &nbsp;·&nbsp; 23:45–05:45 a 13:45–15:45<br>
+      <span>VT</span> 0,1732 €/kWh &nbsp;·&nbsp; ostatný čas
+    </div>
+    <div class="sync-status">
+      <div class="sync-dot loading" id="syncDot"></div>
+      <span id="syncLabel" style="color:var(--muted)">Pripájam...</span>
+    </div>
+  </div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="showTab('prehled',this)">Prehľad</button>
+  <button class="tab" onclick="showTab('domace',this)">+ Domáce</button>
+  <button class="tab" onclick="showTab('externé',this)">+ Externé</button>
+  <button class="tab" onclick="showTab('zaznamy',this)">Záznamy</button>
+  <button class="tab" onclick="showTab('nastavenia',this)">Nastavenia</button>
+</div>
+
+<!-- ══ PREHĽAD ══ -->
+<div id="tab-prehled" class="section active">
+  <div class="filter-row">
+    <span class="filter-label">Mesiac</span>
+    <select id="monthFilter" onchange="renderOverview()"></select>
+  </div>
+  <div class="metrics" id="metricsRow"></div>
+  <div class="card" id="consumptionCard"></div>
+  <div class="card">
+    <div class="card-title">Záznamy — <span id="overviewMonthLabel"></span></div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Dátum</th><th>Typ</th><th>kWh</th><th>NT kWh</th><th>VT kWh</th><th>Cena €</th><th>Rodičia €</th></tr></thead>
+      <tbody id="overviewBody"></tbody>
+    </table></div>
+  </div>
+  <div class="card" id="summaryCard"></div>
+</div>
+
+<!-- ══ DOMÁCE ══ -->
+<div id="tab-domace" class="section">
+  <div class="sec-title">Nové domáce nabíjanie</div>
+  <div class="card">
+    <div class="info-box">
+      <strong>NT okná:</strong> 23:45–05:45 a 13:45–15:45 @ 0,1154 €/kWh &nbsp;·&nbsp;
+      <strong>VT:</strong> ostatný čas @ 0,1732 €/kWh
+    </div>
+    <div class="form-grid g2">
+      <div class="field"><label>Dátum</label><input type="date" id="d_date" onchange="checkFirstOfMonth()"></div>
+      <div class="field"><label>kWh (wallbox)</label><input type="number" id="d_kwh" step="0.1" min="0" placeholder="napr. 52.6" oninput="calcNtVt()"></div>
+    </div>
+    <div class="form-grid g2">
+      <div class="field"><label>Čas začiatku</label><input type="time" id="d_start" oninput="calcNtVt()"></div>
+      <div class="field"><label>Čas konca</label><input type="time" id="d_end" oninput="calcNtVt()"></div>
+    </div>
+    <div class="nt-preview" id="ntVtPreview">— zadaj čas a kWh pre výpočet NT/VT rozdelenia</div>
+    <div class="form-grid g2">
+      <div class="field"><label>Odometer km <small style="opacity:.5;text-transform:none">— voliteľné</small></label><input type="number" id="d_odo" min="0" placeholder="aktuálny stav tachometra"></div>
+      <div class="field"></div>
+    </div>
+
+    <!-- SoC box — zobrazí sa len pri prvom nabíjaní v mesiaci -->
+    <div class="soc-box" id="socBox" style="display:none">
+      <div class="soc-title">⚡ Prvé nabíjanie v mesiaci — stav batérie pred nabíjaním</div>
+      <div class="soc-toggle">
+        <button class="soc-btn active" id="soc80btn" onclick="setSocMode('80')">80% (štandard)</button>
+        <button class="soc-btn" id="soc100btn" onclick="setSocMode('100')">100%</button>
+        <button class="soc-btn" id="socManualbtn" onclick="setSocMode('manual')">Manuálne %</button>
+      </div>
+      <div id="socManualField" style="display:none">
+        <div class="field"><label>Stav batérie pred nabíjaním (%)</label><input type="number" id="d_soc" min="0" max="100" step="1" placeholder="napr. 65"></div>
+      </div>
+      <div style="font-size:11px;color:var(--muted2);margin-top:6px" id="socPreview"></div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn" onclick="showTab('prehled',null)">Zrušiť</button>
+      <button class="btn btn-accent" onclick="addDomace()">Pridať záznam</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ EXTERNÉ ══ -->
+<div id="tab-externé" class="section">
+  <div class="sec-title">Externé nabíjanie</div>
+  <div class="card">
+    <div class="form-grid g2">
+      <div class="field"><label>Dátum</label><input type="date" id="v_date"></div>
+      <div class="field"><label>kWh nabitých</label><input type="number" id="v_kwh" step="0.1" min="0" placeholder="napr. 24.76"></div>
+    </div>
+    <div class="form-grid g2">
+      <div class="field"><label>Typ nabíjania</label>
+        <select id="v_subtype" onchange="toggleExtPrice()">
+          <option value="platene">Platené (verejná stanica)</option>
+          <option value="zadarmo">Zadarmo (práca, rodina...)</option>
+        </select>
+      </div>
+      <div class="field" id="v_price_field"><label>Jednotková cena €/kWh</label><input type="number" id="v_price" step="0.001" min="0" value="0.38"></div>
+    </div>
+    <div class="form-grid g2">
+      <div class="field"><label>Miesto <small style="opacity:.5;text-transform:none">— voliteľné</small></label><input type="text" id="v_place" placeholder="napr. Kaufland, práca..."></div>
+      <div class="field"><label>Odometer km <small style="opacity:.5;text-transform:none">— voliteľné</small></label><input type="number" id="v_odo" min="0" placeholder="aktuálny stav tachometra"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" onclick="showTab('prehled',null)">Zrušiť</button>
+      <button class="btn btn-accent" onclick="addExterne()">Pridať záznam</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ZÁZNAMY ══ -->
+<div id="tab-zaznamy" class="section">
+  <div class="filter-row">
+    <span class="filter-label">Mesiac</span>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="recordMonthFilter" onchange="renderRecords()"></select>
+      <button class="btn btn-sm" onclick="confirmClearAll()">Zmazať všetko</button>
+    </div>
+  </div>
+  <div class="card" style="padding:0;overflow:hidden">
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>Dátum</th><th>Typ</th><th>kWh</th><th>NT</th><th>VT</th><th>Cena €</th><th>Rodičia €</th><th>Odometer</th><th>SoC</th><th></th></tr></thead>
+      <tbody id="recordsBody"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══ NASTAVENIA ══ -->
+<div id="tab-nastavenia" class="section">
+  <div class="sec-title">Nastavenia</div>
+  <div class="card">
+    <div class="card-title">Sadzby a batéria</div>
+    <div class="form-grid g4">
+      <div class="field"><label>NT sadzba €/kWh</label><input type="number" id="s_nt" step="0.0001" value="0.1154"></div>
+      <div class="field"><label>VT sadzba €/kWh</label><input type="number" id="s_vt" step="0.0001" value="0.1732"></div>
+      <div class="field"><label>Kapacita batérie kWh</label><input type="number" id="s_bat" step="0.1" value="77"></div>
+      <div class="field"><label>Účinnosť nabíjania %</label><input type="number" id="s_eff" step="0.1" min="80" max="100" value="91"></div>
+    </div>
+    <div class="btn-row" style="justify-content:flex-start">
+      <button class="btn btn-accent" onclick="saveSettings()">Uložiť</button>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:10px">NT okná: 23:45–05:45 a 13:45–15:45</div>
+  </div>
+  <div class="card">
+    <div class="card-title">Dáta</div>
+    <div class="info-box">Importuj historické záznamy z Marca–Mája 2026.</div>
+    <div class="btn-row" style="justify-content:flex-start;gap:10px">
+      <button class="btn btn-accent" onclick="importHistoric()">Importovať Mar–Máj 2026</button>
+      <button class="btn" onclick="exportCSV()">Exportovať CSV</button>
+      <button class="btn" style="color:var(--vt)" onclick="confirmClearAll()">Zmazať všetko</button>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-title">O aplikácii</div>
+    <div style="font-size:12px;color:var(--muted2);line-height:2">
+      Dáta uložené v Firebase Firestore · synchronizácia v reálnom čase<br>
+      Kapacita batérie: <span id="batDisplay">77</span> kWh · 80% = <span id="bat80Display">61.6</span> kWh<br>
+      Účinnosť nabíjania: <span id="effDisplay">91</span>% (strata pri AC nabíjaní)
+    </div>
+  </div>
+</div>
+
+</div><!-- /shell -->
+
+<!-- ══ EDIT MODAL ══ -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-title">Upraviť záznam</div>
+    <div id="editModalBody"></div>
+    <div class="btn-row" style="margin-top:16px">
+      <button class="btn" onclick="closeModal()">Zrušiť</button>
+      <button class="btn btn-accent" onclick="saveEdit()">Uložiť zmeny</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.0/firebase-app.js";
+import { getFirestore, collection, onSnapshot, addDoc, deleteDoc, doc, setDoc, getDoc, updateDoc }
+  from "https://www.gstatic.com/firebasejs/11.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCnkisz15ZeBq_TjmND_cO0dFtk19LTbEE",
+  authDomain: "nabijanie-auta.firebaseapp.com",
+  projectId: "nabijanie-auta",
+  storageBucket: "nabijanie-auta.firebasestorage.app",
+  messagingSenderId: "171304576616",
+  appId: "1:171304576616:web:ceb1f923622ad5e61ffddd"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+const NT_DEFAULT = 0.1154, VT_DEFAULT = 0.1732, BAT_DEFAULT = 77, EFF_DEFAULT = 91;
+let settings = { nt: NT_DEFAULT, vt: VT_DEFAULT, bat: BAT_DEFAULT, eff: EFF_DEFAULT };
+let records = [];
+let editingId = null;
+
+// ── SYNC ──
+function setSyncStatus(state, text) {
+  const dot=document.getElementById('syncDot'), lbl=document.getElementById('syncLabel');
+  dot.className='sync-dot '+state;
+  lbl.textContent=text;
+  lbl.style.color=state==='ok'?'var(--nt)':state==='err'?'var(--vt)':'var(--muted)';
+}
+
+onSnapshot(collection(db,'nabijania'), snap => {
+  records = snap.docs.map(d=>({_id:d.id,...d.data()}));
+  records.sort((a,b)=>b.date.localeCompare(a.date));
+  setSyncStatus('ok','Synchronizované');
+  renderAll();
+}, err => { setSyncStatus('err','Chyba pripojenia'); console.error(err); });
+
+// ── SETTINGS ──
+async function loadSettings() {
+  try {
+    const snap = await getDoc(doc(db,'config','settings'));
+    if (snap.exists()) {
+      settings = {...settings,...snap.data()};
+      document.getElementById('s_nt').value = settings.nt;
+      document.getElementById('s_vt').value = settings.vt;
+      document.getElementById('s_bat').value = settings.bat||BAT_DEFAULT;
+      document.getElementById('s_eff').value = settings.eff||EFF_DEFAULT;
+      updateBatDisplay();
+    }
+  } catch(e) {}
+}
+function updateBatDisplay() {
+  document.getElementById('batDisplay').textContent = settings.bat;
+  document.getElementById('bat80Display').textContent = (settings.bat*0.8).toFixed(1);
+  document.getElementById('effDisplay').textContent = settings.eff||EFF_DEFAULT;
+}
+window.saveSettings = async function() {
+  settings.nt = parseFloat(document.getElementById('s_nt').value)||NT_DEFAULT;
+  settings.vt = parseFloat(document.getElementById('s_vt').value)||VT_DEFAULT;
+  settings.bat = parseFloat(document.getElementById('s_bat').value)||BAT_DEFAULT;
+  settings.eff = parseFloat(document.getElementById('s_eff').value)||EFF_DEFAULT;
+  try { await setDoc(doc(db,'config','settings'),settings); updateBatDisplay(); renderAll(); alert('Uložené.'); }
+  catch(e) { alert('Chyba.'); }
+};
+
+async function saveRecord(r) {
+  try { await addDoc(collection(db,'nabijania'),r); }
+  catch(e) { alert('Chyba pri ukladaní.'); }
+}
+window.deleteRecord = async function(id) {
+  if (!confirm('Zmazať?')) return;
+  try { await deleteDoc(doc(db,'nabijania',id)); } catch(e) { alert('Chyba.'); }
+};
+window.confirmClearAll = async function() {
+  if (!confirm('Zmazať VŠETKO?')) return;
+  try { await Promise.all(records.map(r=>deleteDoc(doc(db,'nabijania',r._id)))); } catch(e) { alert('Chyba.'); }
+};
+
+// ── NT/VT ──
+function isNT(h,m) { const t=h*60+m; return (t>=23*60+45||t<=5*60+45)||(t>=13*60+45&&t<=15*60+45); }
+function splitNtVt(sh,sm,eh,em,kwh) {
+  let s=sh*60+sm, e=eh*60+em;
+  if (e<=s) e+=1440;
+  const dur=e-s; if (!dur||!kwh) return {ntKwh:0,vtKwh:0};
+  let nt=0;
+  for (let i=0;i<dur;i++) { const t=(s+i)%1440; if (isNT(Math.floor(t/60),t%60)) nt++; }
+  return { ntKwh:parseFloat(((nt/dur)*kwh).toFixed(3)), vtKwh:parseFloat(((dur-nt)/dur*kwh).toFixed(3)) };
+}
+function calcCost(nt,vt) { return parseFloat((nt*settings.nt+vt*settings.vt).toFixed(4)); }
+
+// ── HELPERS ──
+function fmt(n,d=2) { return n==null?'—':Number(n).toFixed(d); }
+function fmtDate(s) { if(!s) return ''; const p=s.split('-'); return p[2]+'.'+p[1]+'.'+p[0]; }
+function mkKey(d) { return d?d.slice(0,7):''; }
+function mkLabel(k) {
+  const M=['Jan','Feb','Mar','Apr','Máj','Jún','Júl','Aug','Sep','Okt','Nov','Dec'];
+  if(!k) return ''; const [y,m]=k.split('-'); return M[parseInt(m)-1]+' '+y;
+}
+function getMonths() { return [...new Set(records.map(r=>mkKey(r.date)).filter(Boolean))].sort().reverse(); }
+function populateSelects() {
+  const months=getMonths();
+  ['monthFilter','recordMonthFilter'].forEach(id=>{
+    const sel=document.getElementById(id), cur=sel.value;
+    sel.innerHTML='<option value="">Všetky mesiace</option>'+months.map(m=>`<option value="${m}">${mkLabel(m)}</option>`).join('');
+    if (months.includes(cur)) sel.value=cur; else if (months.length) sel.value=months[0];
+  });
+}
+function filteredRecs(mk) {
+  const r=mk?records.filter(r=>r.date && r.date.startsWith(mk)):[...records];
+  return r.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+}
+
+// ── SPOTREBA MESIAC ──
+// spotreba = SoC_začiatok_mesiaca + sum(nabité) - SoC_koniec_mesiaca
+// SoC_koniec_mesiaca = SoC_začiatok_nasledujuceho_mesiaca
+function computeConsumption(mk) {
+  if (!mk) return null;
+  // nájdi prvé nabíjanie v tomto mesiaci s SoC
+  const thisMonthRecs = records.filter(r=>r.date.startsWith(mk)).sort((a,b)=>a.date.localeCompare(b.date));
+  const firstThis = thisMonthRecs.find(r=>r.socPct!=null);
+  if (!firstThis) return null;
+  const socStart = firstThis.socPct/100*settings.bat;
+
+  // nájdi prvé nabíjanie nasledujúceho mesiaca s SoC
+  const [y,m] = mk.split('-').map(Number);
+  const nextM = m===12 ? `${y+1}-01` : `${y}-${String(m+1).padStart(2,'0')}`;
+  const nextMonthRecs = records.filter(r=>r.date.startsWith(nextM)).sort((a,b)=>a.date.localeCompare(b.date));
+  const firstNext = nextMonthRecs.find(r=>r.socPct!=null);
+  if (!firstNext) return null;
+  const socEnd = firstNext.socPct/100*settings.bat;
+
+  // súčet všetkých nabití v mesiaci (všetky typy vrátane zadarmo)
+  let totalCharged = 0;
+  thisMonthRecs.forEach(r=>{
+    if (r.type==='domace') totalCharged += (r.ntKwh||0)+(r.vtKwh||0);
+    else totalCharged += r.kwh||0;
+  });
+
+  const consumption = socStart + totalCharged - socEnd;
+  return { socStart, socEnd, totalCharged, consumption, firstThis, firstNext };
+}
+
+// ── SoC MODE ──
+let socMode = '80';
+window.setSocMode = function(mode) {
+  socMode = mode;
+  ['80','100','manual'].forEach(m=>{
+    document.getElementById('soc'+m+'btn')?.classList.toggle('active', m===mode);
+  });
+  document.getElementById('socManualField').style.display = mode==='manual'?'block':'none';
+  updateSocPreview();
+};
+function updateSocPreview() {
+  const pct = socMode==='80'?80:socMode==='100'?100:parseInt(document.getElementById('d_soc')?.value||0);
+  const kwh = pct/100*settings.bat;
+  document.getElementById('socPreview').textContent = pct
+    ? `Energia v batérii pred nabíjaním: ${pct}% = ${kwh.toFixed(1)} kWh`
+    : '';
+}
+
+window.checkFirstOfMonth = function() {
+  const date = document.getElementById('d_date').value;
+  if (!date) return;
+  const mk = mkKey(date);
+  const existingThisMonth = records.filter(r=>r.date.startsWith(mk) && r.type==='domace');
+  const isFirst = existingThisMonth.length === 0;
+  const box = document.getElementById('socBox');
+  box.style.display = isFirst ? 'block' : 'none';
+  if (isFirst) { socMode='80'; setSocMode('80'); updateSocPreview(); }
+};
+
+// ── NT/VT PREVIEW ──
+window.calcNtVt = function() {
+  const ss=document.getElementById('d_start').value, es=document.getElementById('d_end').value;
+  const kwh=parseFloat(document.getElementById('d_kwh').value), box=document.getElementById('ntVtPreview');
+  if (!ss||!es||!kwh) { box.textContent='— zadaj čas a kWh pre výpočet NT/VT rozdelenia'; box.classList.remove('has-data'); return; }
+  const [sh,sm]=ss.split(':').map(Number), [eh,em]=es.split(':').map(Number);
+  const {ntKwh,vtKwh}=splitNtVt(sh,sm,eh,em,kwh), cost=calcCost(ntKwh,vtKwh);
+  box.classList.add('has-data');
+  box.innerHTML = vtKwh>0.01
+    ? `<span style="color:var(--nt)">NT ${fmt(ntKwh,2)} kWh</span> (${fmt(ntKwh*settings.nt,4)} €) &nbsp;+&nbsp; <span style="color:var(--vt)">VT ${fmt(vtKwh,2)} kWh</span> (${fmt(vtKwh*settings.vt,4)} €) &nbsp;=&nbsp; <strong>${fmt(cost,4)} €</strong>`
+    : `Celé v NT: <span style="color:var(--nt)">${fmt(ntKwh,2)} kWh</span> &nbsp;=&nbsp; <strong style="color:var(--accent)">${fmt(cost,4)} €</strong>`;
+};
+
+// ── TOGGLE EXT PRICE ──
+window.toggleExtPrice = function() {
+  const free = document.getElementById('v_subtype').value === 'zadarmo';
+  document.getElementById('v_price_field').style.opacity = free ? '0.3' : '1';
+  document.getElementById('v_price_field').style.pointerEvents = free ? 'none' : 'auto';
+};
+
+// ── ADD DOMÁCE ──
+window.addDomace = async function() {
+  const date=document.getElementById('d_date').value, ss=document.getElementById('d_start').value;
+  const es=document.getElementById('d_end').value, kwh=parseFloat(document.getElementById('d_kwh').value);
+  if (!date||!ss||!es||!kwh) { alert('Vyplň dátum, čas začiatku, konca a kWh.'); return; }
+  const [sh,sm]=ss.split(':').map(Number), [eh,em]=es.split(':').map(Number);
+  const {ntKwh,vtKwh}=splitNtVt(sh,sm,eh,em,kwh), cost=calcCost(ntKwh,vtKwh);
+  const odo=parseInt(document.getElementById('d_odo').value)||null;
+
+  // SoC
+  let socPct = null;
+  if (document.getElementById('socBox').style.display !== 'none') {
+    if (socMode==='80') socPct=80;
+    else if (socMode==='100') socPct=100;
+    else { socPct=parseInt(document.getElementById('d_soc').value)||null; if (!socPct) { alert('Zadaj % stavu batérie.'); return; } }
+  }
+
+  await saveRecord({type:'domace',date,startTime:ss,endTime:es,ntKwh,vtKwh,cost,odo,...(socPct!=null?{socPct}:{})});
+  ['d_date','d_start','d_end','d_kwh','d_odo','d_soc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('ntVtPreview').textContent='— zadaj čas a kWh pre výpočet NT/VT rozdelenia';
+  document.getElementById('ntVtPreview').classList.remove('has-data');
+  document.getElementById('socBox').style.display='none';
+  showTab('prehled',null);
+};
+
+// ── ADD EXTERNÉ ──
+window.addExterne = async function() {
+  const date=document.getElementById('v_date').value, kwh=parseFloat(document.getElementById('v_kwh').value);
+  const subtype=document.getElementById('v_subtype').value;
+  const free = subtype==='zadarmo';
+  if (!date||!kwh) { alert('Vyplň dátum a kWh.'); return; }
+  const price = free ? 0 : parseFloat(document.getElementById('v_price').value)||0;
+  if (!free&&!price) { alert('Zadaj jednotkovú cenu.'); return; }
+  const cost = parseFloat((kwh*price).toFixed(4));
+  const place=document.getElementById('v_place').value;
+  const odo=parseInt(document.getElementById('v_odo').value)||null;
+  await saveRecord({type:free?'zadarmo':'externe',date,kwh,unitPrice:free?0:price,cost,place,odo});
+  ['v_date','v_kwh','v_place','v_odo'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('v_price').value='0.38';
+  document.getElementById('v_subtype').value='platene';
+  toggleExtPrice();
+  showTab('prehled',null);
+};
+
+// ── RENDER OVERVIEW ──
+window.renderOverview = function() {
+  const mk=document.getElementById('monthFilter').value;
+  const recs=filteredRecs(mk);
+  document.getElementById('overviewMonthLabel').textContent = mk?mkLabel(mk):'všetky mesiace';
+
+  let totNt=0,totVt=0,totExt=0,totFree=0,totCost=0,totRodicov=0,totKm=0;
+  recs.forEach(r=>{
+    if (r.type==='domace') { totNt+=r.ntKwh||0; totVt+=r.vtKwh||0; if (!r.zadarmo) { totCost+=r.cost||0; totRodicov+=r.cost||0; } }
+    else if (r.type==='zadarmo') { totFree+=r.kwh||0; }
+    else { totExt+=r.kwh||0; totCost+=r.cost||0; }
+  });
+
+  // km z odo — berieme len odo v tomto mesiaci + prvý odo nasledujúceho mesiaca
+  const allWithOdo = records.filter(r=>r.odo).sort((a,b)=>a.date.localeCompare(b.date));
+  const mRecs = recs.filter(r=>r.odo).sort((a,b)=>a.date.localeCompare(b.date));
+  let odoKm=0;
+  if (mk) {
+    const [y,m] = mk.split('-').map(Number);
+    const nextMk = m===12 ? `${y+1}-01` : `${y}-${String(m+1).padStart(2,'0')}`;
+    const prevMk = m===1 ? `${y-1}-12` : `${y}-${String(m-1).padStart(2,'0')}`;
+
+    // hľadáme odo na začiatok: posledný záznam s odo v PREDCHÁDZAJÚCOM mesiaci
+    const prevMonthOdo = allWithOdo.filter(r=>r.date.startsWith(prevMk));
+    // alebo prvý v aktuálnom mesiaci
+    const odoFrom = prevMonthOdo.length
+      ? prevMonthOdo[prevMonthOdo.length-1].odo
+      : (mRecs.length ? mRecs[0].odo : null);
+
+    // hľadáme odo na koniec: prvý záznam s odo v NASLEDUJÚCOM mesiaci
+    const nextMonthOdo = allWithOdo.filter(r=>r.date.startsWith(nextMk));
+    // alebo posledný v aktuálnom mesiaci
+    const odoTo = nextMonthOdo.length
+      ? nextMonthOdo[0].odo
+      : (mRecs.length ? mRecs[mRecs.length-1].odo : null);
+
+    if (odoFrom && odoTo && odoTo > odoFrom) odoKm = odoTo - odoFrom;
+  } else {
+    // všetky mesiace — celkový rozsah
+    if (allWithOdo.length>=2) odoKm = allWithOdo[allWithOdo.length-1].odo - allWithOdo[0].odo;
+  }
+
+  const totKwh=totNt+totVt+totExt;
+  const eff = (settings.eff||EFF_DEFAULT)/100;
+  // 1. hrubá spotreba: všetko nabité ÷ km (čo si zaplatil)
+  const gross100 = odoKm>0 ? totKwh/odoKm*100 : null;
+  // 2. reálna spotreba auta: nabité × účinnosť ÷ km
+  const net100 = odoKm>0 ? totKwh*eff/odoKm*100 : null;
+  const cPer100 = odoKm>0 ? totCost/odoKm*100 : null;
+
+  document.getElementById('metricsRow').innerHTML=`
+    <div class="metric"><div class="lbl">Domáce kWh</div><div class="val">${fmt(totNt+totVt,1)}</div><div class="sub">NT ${fmt(totNt,1)} · VT ${fmt(totVt,1)}</div></div>
+    <div class="metric c2"><div class="lbl">Celková cena</div><div class="val">${fmt(totCost,2)} €</div><div class="sub">domáce + platené ext.</div></div>
+    <div class="metric c3"><div class="lbl">Rodičom</div><div class="val">${fmt(totRodicov,2)} €</div><div class="sub">len domáce</div></div>
+    <div class="metric c4"><div class="lbl">€ / 100 km</div><div class="val">${cPer100!=null?fmt(cPer100,2)+' €':'—'}</div><div class="sub">${odoKm>0?odoKm+' km':'km nezadané'}</div></div>`;
+
+  // consumption card
+  const cons = mk ? computeConsumption(mk) : null;
+  const cc = document.getElementById('consumptionCard');
+  if (cons) {
+    const consGross100 = odoKm>0 ? cons.consumption/odoKm*100 : null;
+    const consNet100 = odoKm>0 ? cons.consumption*eff/odoKm*100 : null;
+    cc.innerHTML=`
+      <div class="card-title">Spotreba — ${mkLabel(mk)}</div>
+      <div class="summary-grid">
+        <div>
+          <div class="sum-row"><span class="sum-key">SoC začiatok mesiaca</span><span class="sum-val">${cons.firstThis.socPct}% = ${cons.socStart.toFixed(1)} kWh</span></div>
+          <div class="sum-row"><span class="sum-key">Celkovo nabité</span><span class="sum-val">+ ${cons.totalCharged.toFixed(1)} kWh</span></div>
+          <div class="sum-row"><span class="sum-key">SoC koniec mesiaca</span><span class="sum-val">− ${cons.socEnd.toFixed(1)} kWh (${cons.firstNext.socPct}%)</span></div>
+          <div class="sum-row"><span class="sum-key" style="font-weight:500;color:var(--text)">Spotreba mesiaca</span><span class="sum-val accent">${cons.consumption.toFixed(1)} kWh</span></div>
+        </div>
+        <div>
+          ${odoKm>0?`<div class="sum-row"><span class="sum-key">Prešlo km</span><span class="sum-val">${odoKm} km</span></div>`:''}
+          ${consGross100!=null?`<div class="sum-row"><span class="sum-key">Hrubá spotreba <small style="opacity:.6">(nabité ÷ km)</small></span><span class="sum-val accent2">${consGross100.toFixed(2)} kWh/100km</span></div>`:''}
+          ${consNet100!=null?`<div class="sum-row"><span class="sum-key">Reálna spotreba auta <small style="opacity:.6">(×${settings.eff}% účinnosť)</small></span><span class="sum-val" style="color:var(--accent)">${consNet100.toFixed(2)} kWh/100km</span></div>`:''}
+          ${gross100!=null&&!cons?`<div class="sum-row"><span class="sum-key">Nabité ÷ km</span><span class="sum-val accent2">${gross100.toFixed(2)} kWh/100km</span></div>`:''}
+          ${totFree>0?`<div class="sum-row"><span class="sum-key">Zadarmo nabité</span><span class="sum-val" style="color:var(--free)">${fmt(totFree,1)} kWh</span></div>`:''}
+        </div>
+      </div>`;
+    cc.style.display='block';
+  } else if (mk) {
+    cc.innerHTML=`<div class="card-title">Spotreba — ${mkLabel(mk)}</div><div style="font-size:12px;color:var(--muted2)">Na výpočet spotreby je potrebné mať <strong style="color:var(--accent)">SoC</strong> pri prvom nabíjaní tohto aj nasledujúceho mesiaca.</div>`;
+    cc.style.display='block';
+  } else {
+    cc.style.display='none';
+  }
+
+  const tbody=document.getElementById('overviewBody');
+  if (!recs.length) { tbody.innerHTML='<tr><td colspan="7"><div class="empty"><div class="empty-icon">⚡</div>Žiadne záznamy</div></td></tr>'; document.getElementById('summaryCard').innerHTML=''; return; }
+
+  tbody.innerHTML=recs.map(r=>{
+    if (r.type==='domace') {
+      const mx=r.vtKwh>0.01, badge=mx?'<span class="badge b-mixed">NT+VT</span>':'<span class="badge b-nt">NT</span>';
+      return `<tr><td>${fmtDate(r.date)}</td><td>${badge} Domáce</td><td>${fmt((r.ntKwh||0)+(r.vtKwh||0),2)}</td><td style="color:var(--nt)">${fmt(r.ntKwh,2)}</td><td style="color:${mx?'var(--vt)':'var(--muted)'}">${mx?fmt(r.vtKwh,2):'—'}</td><td>${fmt(r.cost,4)}</td><td style="color:var(--accent)">${fmt(r.cost,4)}</td></tr>`;
+    } else if (r.type==='zadarmo') {
+      return `<tr><td>${fmtDate(r.date)}</td><td><span class="badge b-free">Zadarmo</span>${r.place?' <span style="color:var(--muted)">'+r.place+'</span>':''}</td><td>${fmt(r.kwh,2)}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td></tr>`;
+    } else {
+      return `<tr><td>${fmtDate(r.date)}</td><td><span class="badge b-pub">Externé</span>${r.place?' <span style="color:var(--muted)">'+r.place+'</span>':''}</td><td>${fmt(r.kwh,2)}</td><td style="color:var(--muted)">—</td><td style="color:var(--muted)">—</td><td>${fmt(r.cost,4)}</td><td style="color:var(--muted)">—</td></tr>`;
+    }
+  }).join('');
+
+  document.getElementById('summaryCard').innerHTML=`
+    <div class="card-title">Sumár${mk?' — '+mkLabel(mk):''}</div>
+    <div class="summary-grid">
+      <div>
+        <div class="sum-row"><span class="sum-key">Domáce NT</span><span class="sum-val">${fmt(totNt,2)} kWh × ${settings.nt} € = <span style="color:var(--nt)">${fmt(totNt*settings.nt,4)} €</span></span></div>
+        <div class="sum-row"><span class="sum-key">Domáce VT</span><span class="sum-val">${fmt(totVt,2)} kWh × ${settings.vt} € = <span style="color:var(--vt)">${fmt(totVt*settings.vt,4)} €</span></span></div>
+        <div class="sum-row"><span class="sum-key" style="font-weight:500;color:var(--text)">Rodičom spolu</span><span class="sum-val accent">${fmt(totRodicov,2)} €</span></div>
+      </div>
+      <div>
+        <div class="sum-row"><span class="sum-key">Externé (platené)</span><span class="sum-val accent2">${fmt(totExt,2)} kWh → ${fmt(totCost-totRodicov,4)} €</span></div>
+        ${totFree>0?`<div class="sum-row"><span class="sum-key">Zadarmo</span><span class="sum-val" style="color:var(--free)">${fmt(totFree,2)} kWh</span></div>`:''}
+        <div class="sum-row"><span class="sum-key" style="font-weight:500;color:var(--text)">Celkové náklady</span><span class="sum-val" style="font-size:15px">${fmt(totCost,2)} €</span></div>
+        ${cPer100!=null?`<div class="sum-row"><span class="sum-key">€/100 km</span><span class="sum-val">${fmt(cPer100,3)} €</span></div>`:''}
+        ${gross100!=null?`<div class="sum-row"><span class="sum-key">Nabité/100 km <small style="opacity:.6">(hrubé)</small></span><span class="sum-val">${fmt(gross100,2)} kWh</span></div>`:''}
+        ${net100!=null?`<div class="sum-row"><span class="sum-key">Reálna spotreba auta <small style="opacity:.6">(×${settings.eff}%)</small></span><span class="sum-val" style="color:var(--accent)">${fmt(net100,2)} kWh/100km</span></div>`:''}
+      </div>
+    </div>`;
+};
+
+// ── RENDER RECORDS ──
+window.renderRecords = function() {
+  const mk=document.getElementById('recordMonthFilter').value;
+  const recs=filteredRecs(mk), tbody=document.getElementById('recordsBody');
+  if (!recs.length) { tbody.innerHTML='<tr><td colspan="10"><div class="empty"><div class="empty-icon">⚡</div>Žiadne záznamy</div></td></tr>'; return; }
+  tbody.innerHTML=recs.map(r=>{
+    const id=r._id;
+    let typeCell, kwhCell, ntCell, vtCell, costCell, parentCell;
+    if (r.type==='domace') {
+      const mx=r.vtKwh>0.01;
+      const isZadarmo = r.zadarmo===true;
+      typeCell=`${mx?'<span class="badge b-mixed">NT+VT</span>':'<span class="badge b-nt">NT</span>'} Dom.${isZadarmo?' <span class="badge b-free">zadarmo</span>':''}`;
+      kwhCell=fmt((r.ntKwh||0)+(r.vtKwh||0),2);
+      ntCell=`<td style="color:var(--nt)">${fmt(r.ntKwh,2)}</td>`;
+      vtCell=`<td style="color:${mx?'var(--vt)':'var(--muted)'}">${mx?fmt(r.vtKwh,2):'—'}</td>`;
+      costCell=isZadarmo?'<span style="color:var(--free)">zadarmo</span>':fmt(r.cost,4);
+      parentCell=isZadarmo?'<span style="color:var(--muted)">—</span>':`<span style="color:var(--accent)">${fmt(r.cost,4)}</span>`;
+    } else if (r.type==='zadarmo') {
+      typeCell=`<span class="badge b-free">Zadarmo</span>${r.place?' '+r.place:''}`;
+      kwhCell=fmt(r.kwh,2); ntCell='<td>—</td>'; vtCell='<td>—</td>';
+      costCell='<span style="color:var(--muted)">—</span>'; parentCell='<span style="color:var(--muted)">—</span>';
+    } else {
+      typeCell=`<span class="badge b-pub">Ext.</span>${r.place?' <small style="color:var(--muted)">'+r.place+'</small>':''}`;
+      kwhCell=fmt(r.kwh,2); ntCell='<td>—</td>'; vtCell='<td>—</td>';
+      costCell=fmt(r.cost,4); parentCell='<span style="color:var(--muted)">—</span>';
+    }
+    const socCell = r.socPct!=null ? `<span style="color:var(--accent)">${r.socPct}%</span>` : '—';
+    return `<tr>
+      <td>${fmtDate(r.date)}</td>
+      <td>${typeCell}</td>
+      <td>${kwhCell}</td>
+      ${ntCell}${vtCell}
+      <td>${costCell}</td>
+      <td>${parentCell}</td>
+      <td style="color:var(--muted)">${r.odo?r.odo+' km':'—'}</td>
+      <td>${socCell}</td>
+      <td>
+        <button class="btn btn-edit" onclick="openEdit('${id}')">✎</button>
+        <button class="btn btn-danger" onclick="deleteRecord('${id}')">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+};
+
+function renderAll() {
+  populateSelects();
+  // dáme tick aby DOM stihl updatovať hodnotu selectu
+  setTimeout(()=>{ renderOverview(); renderRecords(); }, 0);
+}
+
+// ── TABS ──
+window.showTab = function(name, btn) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  if (btn) { document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); btn.classList.add('active'); }
+  else { const names=['prehled','domace','externé','zaznamy','nastavenia']; document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',names[i]===name)); }
+};
+
+// ── EDIT MODAL ──
+window.openEdit = function(id) {
+  const r = records.find(x=>x._id===id);
+  if (!r) return;
+  editingId = id;
+  const body = document.getElementById('editModalBody');
+
+  if (r.type==='domace') {
+    body.innerHTML=`
+      <div class="form-grid g2">
+        <div class="field"><label>Dátum</label><input type="date" id="e_date" value="${r.date}"></div>
+        <div class="field"><label>kWh celkovo</label><input type="number" id="e_kwh" step="0.1" value="${(r.ntKwh||0)+(r.vtKwh||0)}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>Čas začiatku</label><input type="time" id="e_start" value="${r.startTime||''}"></div>
+        <div class="field"><label>Čas konca</label><input type="time" id="e_end" value="${r.endTime||''}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>NT kWh (prepočíta sa automaticky)</label><input type="number" id="e_nt" step="0.001" value="${r.ntKwh||0}"></div>
+        <div class="field"><label>VT kWh</label><input type="number" id="e_vt" step="0.001" value="${r.vtKwh||0}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>Odometer km</label><input type="number" id="e_odo" value="${r.odo||''}"></div>
+        <div class="field"><label>SoC pri nabíjaní (%)</label><input type="number" id="e_soc" min="0" max="100" value="${r.socPct||''}"></div>
+      </div>
+      <div style="margin-top:4px;padding:10px 14px;background:rgba(196,181,253,.06);border:.5px solid rgba(196,181,253,.2);border-radius:var(--r);display:flex;align-items:center;gap:10px">
+        <input type="checkbox" id="e_zadarmo" ${r.zadarmo?'checked':''} style="width:16px;height:16px;cursor:pointer;accent-color:var(--free)">
+        <label for="e_zadarmo" style="font-size:12px;color:var(--muted2);cursor:pointer;text-transform:none;letter-spacing:0">
+          Nabíjané zadarmo <small style="color:var(--muted)">(napr. u rodičov — kWh sa evidujú, ale nespadá do nákladov)</small>
+        </label>
+      </div>`;
+  } else {
+    body.innerHTML=`
+      <div class="form-grid g2">
+        <div class="field"><label>Dátum</label><input type="date" id="e_date" value="${r.date}"></div>
+        <div class="field"><label>kWh</label><input type="number" id="e_kwh" step="0.1" value="${r.kwh||0}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>Typ</label>
+          <select id="e_subtype">
+            <option value="externe" ${r.type==='externe'?'selected':''}>Platené externé</option>
+            <option value="zadarmo" ${r.type==='zadarmo'?'selected':''}>Zadarmo</option>
+          </select>
+        </div>
+        <div class="field"><label>Cena €/kWh</label><input type="number" id="e_price" step="0.001" value="${r.unitPrice||0}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>Miesto</label><input type="text" id="e_place" value="${r.place||''}"></div>
+        <div class="field"><label>Odometer km</label><input type="number" id="e_odo" value="${r.odo||''}"></div>
+      </div>`;
+  }
+
+  document.getElementById('editModal').classList.add('open');
+};
+
+window.closeModal = function() {
+  document.getElementById('editModal').classList.remove('open');
+  editingId=null;
+};
+
+window.saveEdit = async function() {
+  if (!editingId) return;
+  const r = records.find(x=>x._id===editingId);
+  if (!r) return;
+  let updated = {};
+
+  if (r.type==='domace') {
+    const date=document.getElementById('e_date').value;
+    const ss=document.getElementById('e_start').value, es=document.getElementById('e_end').value;
+    const kwh=parseFloat(document.getElementById('e_kwh').value)||0;
+    let ntKwh, vtKwh;
+    if (ss&&es&&kwh) {
+      const [sh,sm]=ss.split(':').map(Number), [eh,em]=es.split(':').map(Number);
+      ({ntKwh,vtKwh}=splitNtVt(sh,sm,eh,em,kwh));
+    } else {
+      ntKwh=parseFloat(document.getElementById('e_nt').value)||0;
+      vtKwh=parseFloat(document.getElementById('e_vt').value)||0;
+    }
+    const cost=calcCost(ntKwh,vtKwh);
+    const odo=parseInt(document.getElementById('e_odo').value)||null;
+    const socPct=parseInt(document.getElementById('e_soc').value)||null;
+    const zadarmo=document.getElementById('e_zadarmo').checked;
+    const finalCost = zadarmo ? 0 : calcCost(ntKwh,vtKwh);
+    updated={date,startTime:ss,endTime:es,ntKwh,vtKwh,cost:finalCost,odo,zadarmo,...(socPct!=null?{socPct}:{})};  } else {
+    const date=document.getElementById('e_date').value;
+    const kwh=parseFloat(document.getElementById('e_kwh').value)||0;
+    const subtype=document.getElementById('e_subtype').value;
+    const price=parseFloat(document.getElementById('e_price').value)||0;
+    const cost=parseFloat((kwh*price).toFixed(4));
+    const place=document.getElementById('e_place').value;
+    const odo=parseInt(document.getElementById('e_odo').value)||null;
+    updated={date,type:subtype,kwh,unitPrice:price,cost,place,odo};
+  }
+
+  try {
+    await updateDoc(doc(db,'nabijania',editingId), updated);
+    closeModal();
+  } catch(e) { alert('Chyba pri ukladaní.'); }
+};
+
+// ── EXPORT ──
+window.exportCSV = function() {
+  const rows=[['datum','typ','kwh_nt','kwh_vt','kwh_ext','kwh_zadarmo','cena_eur','rodicom_eur','odometer','soc_pct','miesto']];
+  records.forEach(r=>{
+    if(r.type==='domace') rows.push([r.date,'domace',r.ntKwh||0,r.vtKwh||0,'','',fmt(r.cost,4),fmt(r.cost,4),r.odo||'',r.socPct||'','']);
+    else if(r.type==='zadarmo') rows.push([r.date,'zadarmo','','','',r.kwh||0,0,0,r.odo||'','',r.place||'']);
+    else rows.push([r.date,'externe','','',r.kwh||0,'',fmt(r.cost,4),'',r.odo||'','',r.place||'']);
+  });
+  const a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(rows.map(r=>r.join(',')).join('\n'));
+  a.download='ev-tracker-export.csv'; a.click();
+};
+
+// ── HISTORIC ──
+const ND=NT_DEFAULT, VD=VT_DEFAULT;
+const HISTORIC=[
+  {type:'domace',date:'2026-02-28',startTime:'23:45',endTime:'07:45',ntKwh:52.6,vtKwh:0,cost:parseFloat((52.6*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-04',startTime:'23:45',endTime:'06:22',ntKwh:59.9,vtKwh:0,cost:parseFloat((59.9*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-06',startTime:'23:45',endTime:'07:11',ntKwh:33.7,vtKwh:0,cost:parseFloat((33.7*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-09',startTime:'23:45',endTime:'05:37',ntKwh:45.7,vtKwh:9.5,cost:parseFloat((45.7*ND+9.5*VD).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-11',startTime:'23:00',endTime:'05:21',ntKwh:56.3,vtKwh:0,cost:parseFloat((56.3*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-12',startTime:'13:45',endTime:'15:45',ntKwh:9.6,vtKwh:0,cost:parseFloat((9.6*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-15',startTime:'23:45',endTime:'06:06',ntKwh:54.8,vtKwh:0,cost:parseFloat((54.8*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-18',startTime:'22:02',endTime:'05:18',ntKwh:11.2,vtKwh:45.3,cost:parseFloat((11.2*ND+45.3*VD).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-22',startTime:'23:45',endTime:'06:20',ntKwh:57.4,vtKwh:0,cost:parseFloat((57.4*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-26',startTime:'23:45',endTime:'05:16',ntKwh:44.2,vtKwh:0,cost:parseFloat((44.2*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-29',startTime:'23:45',endTime:'06:19',ntKwh:49.3,vtKwh:0,cost:parseFloat((49.3*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-03-31',startTime:'23:45',endTime:'05:23',ntKwh:23.9,vtKwh:0,cost:parseFloat((23.9*ND).toFixed(4)),odo:7326},
+  {type:'externe',date:'2026-03-09',kwh:19,unitPrice:0.38,cost:7.22,place:''},
+  {type:'externe',date:'2026-03-12',kwh:16.5,unitPrice:0.38,cost:6.27,place:''},
+  {type:'externe',date:'2026-03-15',kwh:27.6,unitPrice:0.59,cost:16.284,place:''},
+  {type:'domace',date:'2026-04-02',startTime:'23:45',endTime:'19:25',ntKwh:49.9,vtKwh:0,cost:parseFloat((49.9*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-03',startTime:'23:45',endTime:'15:23',ntKwh:6.8,vtKwh:0,cost:parseFloat((6.8*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-08',startTime:'23:45',endTime:'05:23',ntKwh:34.9,vtKwh:0,cost:parseFloat((34.9*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-09',startTime:'16:29',endTime:'17:48',ntKwh:0,vtKwh:13.4,cost:parseFloat((13.4*VD).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-11',startTime:'23:45',endTime:'06:56',ntKwh:58.8,vtKwh:0,cost:parseFloat((58.8*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-14',startTime:'23:45',endTime:'05:23',ntKwh:55.9,vtKwh:0,cost:parseFloat((55.9*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-15',startTime:'23:45',endTime:'05:28',ntKwh:33.6,vtKwh:0,cost:parseFloat((33.6*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-18',startTime:'03:02',endTime:'18:52',ntKwh:10.8,vtKwh:60,cost:parseFloat((10.8*ND+60*VD).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-21',startTime:'23:45',endTime:'05:26',ntKwh:50.7,vtKwh:0,cost:parseFloat((50.7*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-24',startTime:'23:45',endTime:'09:03',ntKwh:42.7,vtKwh:0,cost:parseFloat((42.7*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-25',startTime:'23:45',endTime:'07:43',ntKwh:45.8,vtKwh:0,cost:parseFloat((45.8*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-04-29',startTime:'23:45',endTime:'08:16',ntKwh:60.8,vtKwh:0,cost:parseFloat((60.8*ND).toFixed(4)),odo:10447},
+  {type:'externe',date:'2026-04-02',kwh:24.76,unitPrice:0.38,cost:9.4088,place:''},
+  {type:'domace',date:'2026-05-03',startTime:'23:45',endTime:'05:19',ntKwh:16.1,vtKwh:0,cost:parseFloat((16.1*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-05-04',startTime:'23:45',endTime:'05:23',ntKwh:32.2,vtKwh:0,cost:parseFloat((32.2*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-05-06',startTime:'23:45',endTime:'03:59',ntKwh:32.4,vtKwh:0,cost:parseFloat((32.4*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-05-08',startTime:'13:45',endTime:'15:47',ntKwh:20.7,vtKwh:0,cost:parseFloat((20.7*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-05-08',startTime:'23:45',endTime:'08:16',ntKwh:36.6,vtKwh:0,cost:parseFloat((36.6*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-05-13',startTime:'23:45',endTime:'06:14',ntKwh:58,vtKwh:0,cost:parseFloat((58*ND).toFixed(4)),odo:null},
+  {type:'domace',date:'2026-05-17',startTime:'23:45',endTime:'06:15',ntKwh:48.2,vtKwh:0,cost:parseFloat((48.2*ND).toFixed(4)),odo:11882},
+];
+
+window.importHistoric = async function() {
+  if (!confirm('Importovať Mar–Máj 2026?')) return;
+  const existing=new Set(records.map(r=>r.date+'|'+r.type+'|'+(r.ntKwh||0)+'|'+(r.kwh||0)));
+  let added=0;
+  for (const r of HISTORIC) {
+    const k=r.date+'|'+r.type+'|'+(r.ntKwh||0)+'|'+(r.kwh||0);
+    if (!existing.has(k)) { await saveRecord(r); added++; }
+  }
+  alert(`Importovaných ${added} záznamov.`);
+};
+
+// ── INIT ──
+loadSettings();
+</script>
+</body>
+</html>
