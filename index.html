@@ -540,32 +540,23 @@ window.renderOverview = function() {
     else { totExt+=r.kwh||0; totCost+=r.cost||0; }
   });
 
-  // km z odo — berieme len odo v tomto mesiaci + prvý odo nasledujúceho mesiaca
+  // km z odo — prvý odo aktuálneho mesiaca vs prvý odo nasledujúceho mesiaca
   const allWithOdo = records.filter(r=>r.odo).sort((a,b)=>a.date.localeCompare(b.date));
   const mRecs = recs.filter(r=>r.odo).sort((a,b)=>a.date.localeCompare(b.date));
   let odoKm=0;
   if (mk) {
     const [y,m] = mk.split('-').map(Number);
     const nextMk = m===12 ? `${y+1}-01` : `${y}-${String(m+1).padStart(2,'0')}`;
-    const prevMk = m===1 ? `${y-1}-12` : `${y}-${String(m-1).padStart(2,'0')}`;
 
-    // hľadáme odo na začiatok: posledný záznam s odo v PREDCHÁDZAJÚCOM mesiaci
-    const prevMonthOdo = allWithOdo.filter(r=>r.date.startsWith(prevMk));
-    // alebo prvý v aktuálnom mesiaci
-    const odoFrom = prevMonthOdo.length
-      ? prevMonthOdo[prevMonthOdo.length-1].odo
-      : (mRecs.length ? mRecs[0].odo : null);
+    // začiatok = prvý odo v aktuálnom mesiaci
+    const odoFrom = mRecs.length ? mRecs[0].odo : null;
 
-    // hľadáme odo na koniec: prvý záznam s odo v NASLEDUJÚCOM mesiaci
+    // koniec = prvý odo v nasledujúcom mesiaci
     const nextMonthOdo = allWithOdo.filter(r=>r.date.startsWith(nextMk));
-    // alebo posledný v aktuálnom mesiaci
-    const odoTo = nextMonthOdo.length
-      ? nextMonthOdo[0].odo
-      : (mRecs.length ? mRecs[mRecs.length-1].odo : null);
+    const odoTo = nextMonthOdo.length ? nextMonthOdo[0].odo : null;
 
     if (odoFrom && odoTo && odoTo > odoFrom) odoKm = odoTo - odoFrom;
   } else {
-    // všetky mesiace — celkový rozsah
     if (allWithOdo.length>=2) odoKm = allWithOdo[allWithOdo.length-1].odo - allWithOdo[0].odo;
   }
 
