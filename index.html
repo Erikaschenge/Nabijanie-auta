@@ -1094,7 +1094,11 @@ window.renderOverview = async function() {
 
   let totNt=0,totVt=0,totExt=0,totFree=0,totCost=0,totRodicov=0,totKm=0;
   recs.forEach(r=>{
-    if (r.type==='domace') { totNt+=r.ntKwh||0; totVt+=r.vtKwh||0; if (!r.zadarmo) { totCost+=r.cost||0; totRodicov+=r.cost||0; } }
+    if (r.type==='domace') {
+      totNt+=r.ntKwh||0; totVt+=r.vtKwh||0;
+      if (!r.zadarmo) { totCost+=r.cost||0; totRodicov+=r.cost||0; }
+      else { totFree+=(r.ntKwh||0)+(r.vtKwh||0); } // domáce zadarmo = tiež energia
+    }
     else if (r.type==='zadarmo') { totFree+=r.kwh||0; }
     else { totExt+=r.kwh||0; totCost+=r.cost||0; }
   });
@@ -1119,7 +1123,7 @@ window.renderOverview = async function() {
     if (allWithOdo.length>=2) odoKm = allWithOdo[allWithOdo.length-1].odo - allWithOdo[0].odo;
   }
 
-  const totKwh=totNt+totVt+totExt;
+  const totKwh=totNt+totVt+totExt+totFree;
   const eff = (settings.eff||EFF_DEFAULT)/100;
   // 1. hrubá spotreba: všetko nabité ÷ km (čo si zaplatil)
   const gross100 = odoKm>0 ? totKwh/odoKm*100 : null;
