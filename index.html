@@ -1170,6 +1170,20 @@ window.renderOverview = async function() {
   // consumption card
   const cons = mk ? computeConsumption(mk) : null;
   const cc = document.getElementById('consumptionCard');
+  // načítaj foto pre tento mesiac (platí pre uzavreté aj priebežné)
+  const interimDataForPhoto = mk ? await loadInterim(mk) : null;
+  const savedPhotoUrl = interimDataForPhoto?.photoUrl || null;
+  const photoHtml = mk ? `
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:14px">
+      <div style="font-family:var(--font-head);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px">Foto palubného počítača</div>
+      ${savedPhotoUrl ? `<img src="${savedPhotoUrl}" style="width:100%;max-width:320px;border-radius:var(--r);border:1px solid var(--border2);margin-bottom:10px;display:block">` : ''}
+      <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border:1px solid var(--border2);border-radius:var(--r);font-family:var(--font-head);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)">
+        📷 ${savedPhotoUrl ? 'Zmeniť fotku' : 'Nahrať fotku'}
+        <input type="file" id="interim_photo_${mk}" accept="image/*" capture="environment" style="display:none" onchange="uploadInterimPhoto('${mk}',this)">
+      </label>
+      <span id="photo_status_${mk}" style="font-size:11px;color:var(--muted2);margin-left:10px"></span>
+    </div>` : '';
+
   if (cons) {
     const consGross100 = odoKm>0 ? cons.consumption/odoKm*100 : null;
     const consNet100 = odoKm>0 ? cons.consumption*eff/odoKm*100 : null;
@@ -1179,7 +1193,7 @@ window.renderOverview = async function() {
         <div>
           <div class="sum-row"><span class="sum-key">SoC začiatok mesiaca</span><span class="sum-val">${cons.firstThis.socPct}% = ${cons.socStart.toFixed(1)} kWh</span></div>
           <div class="sum-row"><span class="sum-key">Celkovo nabité v mesiaci</span><span class="sum-val">${cons.totalCharged.toFixed(1)} kWh</span></div>
-          <div class="sum-row"><span class="sum-key">Nabité pre spotrebu <small style="opacity:.6">(bez 1. nab. + 1. nab. jún × účinnosť)</small></span><span class="sum-val">+ ${cons.chargedForConsumption.toFixed(1)} kWh</span></div>
+          <div class="sum-row"><span class="sum-key">Nabité pre spotrebu <small style="opacity:.6">(bez 1. nab. + 1. nab. nasl. mes. × účinnosť)</small></span><span class="sum-val">+ ${cons.chargedForConsumption.toFixed(1)} kWh</span></div>
           <div class="sum-row"><span class="sum-key">SoC koniec mesiaca</span><span class="sum-val">− ${cons.socEnd.toFixed(1)} kWh (${cons.firstNext.socPct}%)</span></div>
           <div class="sum-row"><span class="sum-key" style="font-weight:500;color:var(--text)">Spotreba mesiaca</span><span class="sum-val accent">${cons.consumption.toFixed(1)} kWh</span></div>
         </div>
@@ -1187,10 +1201,10 @@ window.renderOverview = async function() {
           ${odoKm>0?`<div class="sum-row"><span class="sum-key">Prešlo km</span><span class="sum-val">${odoKm} km</span></div>`:''}
           ${consGross100!=null?`<div class="sum-row"><span class="sum-key">Hrubá spotreba <small style="opacity:.6">(nabité ÷ km)</small></span><span class="sum-val accent2">${consGross100.toFixed(2)} kWh/100km</span></div>`:''}
           ${consNet100!=null?`<div class="sum-row"><span class="sum-key">Reálna spotreba auta <small style="opacity:.6">(×${settings.eff}% účinnosť)</small></span><span class="sum-val" style="color:var(--accent)">${consNet100.toFixed(2)} kWh/100km</span></div>`:''}
-          ${gross100!=null&&!cons?`<div class="sum-row"><span class="sum-key">Nabité ÷ km</span><span class="sum-val accent2">${gross100.toFixed(2)} kWh/100km</span></div>`:''}
           ${totFree>0?`<div class="sum-row"><span class="sum-key">Zadarmo nabité</span><span class="sum-val" style="color:var(--free)">${fmt(totFree,1)} kWh</span></div>`:''}
         </div>
-      </div>`;
+      </div>
+      ${photoHtml}`;
     cc.style.display='block';
   } else if (mk) {
     // priebežná spotreba — nemáme SoC nasledujúceho mesiaca ešte
@@ -1202,7 +1216,6 @@ window.renderOverview = async function() {
     let savedSoc = null, savedOdo = null;
     const interimData = await loadInterim(mk);
     if (interimData) { savedSoc = interimData.soc; savedOdo = interimData.odo; }
-    const savedPhoto = interimData?.photoUrl || null;
 
     // vypočítaj ak máme dáta
     const interimSoc = savedSoc;
@@ -1245,15 +1258,7 @@ window.renderOverview = async function() {
         </div>
         <button class="btn btn-accent" style="padding:9px 16px;font-size:11px;white-space:nowrap" onclick="saveInterim('${mk}')">Prepočítať</button>
       </div>
-      <div style="border-top:1px solid var(--border);padding-top:14px;margin-top:12px">
-        <div style="font-family:var(--font-head);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted2);margin-bottom:10px">Foto palubného počítača</div>
-        ${savedPhoto ? `<img src="${savedPhoto}" style="width:100%;max-width:320px;border-radius:var(--r);border:1px solid var(--border2);margin-bottom:10px;display:block">` : ''}
-        <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border:1px solid var(--border2);border-radius:var(--r);font-family:var(--font-head);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)">
-          📷 ${savedPhoto ? 'Zmeniť fotku' : 'Nahrať fotku'}
-          <input type="file" id="interim_photo_${mk}" accept="image/*" capture="environment" style="display:none" onchange="uploadInterimPhoto('${mk}',this)">
-        </label>
-        <span id="photo_status_${mk}" style="font-size:11px;color:var(--muted2);margin-left:10px"></span>
-      </div>`;
+      ${photoHtml}`;
     cc.style.display='block';
   } else {
     cc.style.display='none';
