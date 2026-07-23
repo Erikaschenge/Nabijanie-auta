@@ -1179,7 +1179,7 @@ window.renderOverview = async function() {
       ${savedPhotoUrl ? `<img src="${savedPhotoUrl}" style="width:100%;max-width:320px;border-radius:var(--r);border:1px solid var(--border2);margin-bottom:10px;display:block">` : ''}
       <label style="display:inline-flex;align-items:center;gap:8px;cursor:pointer;padding:8px 14px;border:1px solid var(--border2);border-radius:var(--r);font-family:var(--font-head);font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted2)">
         📷 ${savedPhotoUrl ? 'Zmeniť fotku' : 'Nahrať fotku'}
-        <input type="file" id="interim_photo_${mk}" accept="image/*" capture="environment" style="display:none" onchange="uploadInterimPhoto('${mk}',this)">
+        <input type="file" id="interim_photo_${mk}" accept="image/*" style="display:none" onchange="uploadInterimPhoto('${mk}',this)">
       </label>
       <span id="photo_status_${mk}" style="font-size:11px;color:var(--muted2);margin-left:10px"></span>
     </div>` : '';
