@@ -1541,7 +1541,10 @@ window.uploadInterimPhoto = async function(mk, input) {
     delete interimCache[mk];
     status.textContent = '✓ Nahraté';
     renderOverview();
-  } catch(e) { status.textContent = '✗ Chyba'; console.error(e); }
+  } catch(e) {
+    console.error('Upload error:', e);
+    status.textContent = '✗ ' + (e.code || e.message || 'Chyba uploadu');
+  }
 };
 
 async function resizeImage(file, maxPx) {
