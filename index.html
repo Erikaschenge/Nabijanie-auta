@@ -717,11 +717,19 @@ body.theme-b .info-box { color: #039e97; }
       <div class="field"><label>Dátum</label><input type="date" id="d_date" onchange="checkFirstOfMonth()"></div>
       <div class="field"><label>kWh (wallbox)</label><input type="number" id="d_kwh" step="0.1" min="0" placeholder="napr. 52.6" oninput="calcNtVt()"></div>
     </div>
-    <div class="form-grid g2">
-      <div class="field"><label>Čas začiatku</label><input type="time" id="d_start" oninput="calcNtVt()"></div>
-      <div class="field"><label>Čas konca</label><input type="time" id="d_end" oninput="calcNtVt()"></div>
+    <div style="margin-bottom:14px">
+      <label style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:rgba(255,140,66,.06);border:1px solid rgba(255,140,66,.25);border-radius:var(--r)">
+        <input type="checkbox" id="d_hasVt" onchange="toggleVtFields()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--vt)">
+        <span style="font-family:var(--font-head);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--vt)">Nabíjal som aj mimo NT (vo VT)</span>
+      </label>
     </div>
-    <div class="nt-preview" id="ntVtPreview">— zadaj čas a kWh pre výpočet NT/VT rozdelenia</div>
+    <div id="vtTimeFields" style="display:none">
+      <div class="form-grid g2">
+        <div class="field"><label>Čas začiatku</label><input type="time" id="d_start" oninput="calcNtVt()"></div>
+        <div class="field"><label>Čas konca</label><input type="time" id="d_end" oninput="calcNtVt()"></div>
+      </div>
+    </div>
+    <div class="nt-preview has-data" id="ntVtPreview">Celé nabíjanie v NT — zadaj kWh</div>
     <div class="form-grid g2">
       <div class="field"><label>Odometer km <small style="opacity:.5;text-transform:none">— voliteľné</small></label><input type="number" id="d_odo" min="0" placeholder="aktuálny stav tachometra"></div>
       <div class="field"></div>
@@ -754,7 +762,7 @@ body.theme-b .info-box { color: #039e97; }
   <div class="card">
     <div class="form-grid g2">
       <div class="field"><label>Dátum</label><input type="date" id="v_date"></div>
-      <div class="field"><label>kWh nabitých</label><input type="number" id="v_kwh" step="0.1" min="0" placeholder="napr. 24.76"></div>
+      <div class="field"><label>kWh nabitých</label><input type="number" id="v_kwh" step="0.1" min="0" placeholder="napr. 24.76" oninput="calcExtCost()"></div>
     </div>
     <div class="form-grid g2">
       <div class="field"><label>Typ nabíjania</label>
@@ -763,7 +771,7 @@ body.theme-b .info-box { color: #039e97; }
           <option value="zadarmo">Zadarmo (práca, rodina...)</option>
         </select>
       </div>
-      <div class="field" id="v_price_field"><label>Jednotková cena €/kWh</label><input type="number" id="v_price" step="0.001" min="0" value="0.38"></div>
+      <div class="field" id="v_price_field"><label>Jednotková cena €/kWh</label><input type="number" id="v_price" step="0.001" min="0" value="0.38" oninput="calcExtCost()"></div>
     </div>
     <div class="form-grid g2">
       <div class="field"><label>Prúd</label>
@@ -776,7 +784,20 @@ body.theme-b .info-box { color: #039e97; }
     </div>
     <div class="form-grid g2">
       <div class="field"><label>Odometer km <small style="opacity:.5;text-transform:none">— voliteľné</small></label><input type="number" id="v_odo" min="0" placeholder="aktuálny stav tachometra"></div>
-      <div class="field"></div>
+      <div class="field"><label>Z toho voľných kWh <small style="opacity:.5;text-transform:none">— z predplatného</small></label><input type="number" id="v_free_kwh" step="0.1" min="0" placeholder="napr. 3" oninput="calcExtCost()"></div>
+    </div>
+    <div class="nt-preview" id="extCostPreview">— zadaj kWh a cenu pre výpočet</div>
+    <div style="border-top:1px solid var(--border);padding-top:14px;margin-bottom:14px">
+      <label style="display:inline-flex;align-items:center;gap:10px;cursor:pointer;padding:10px 14px;background:rgba(167,139,250,.06);border:1px solid rgba(167,139,250,.25);border-radius:var(--r);margin-bottom:12px">
+        <input type="checkbox" id="v_hasSub" onchange="toggleSubFields()" style="width:16px;height:16px;cursor:pointer;accent-color:var(--pub)">
+        <span style="font-family:var(--font-head);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--pub)">Kúpil som predplatné</span>
+      </label>
+      <div id="subFields" style="display:none">
+        <div class="form-grid g2">
+          <div class="field"><label>Suma predplatného €</label><input type="number" id="v_sub_amount" step="0.01" min="0" placeholder="napr. 0.90"></div>
+          <div class="field"><label>Poznámka</label><input type="text" id="v_sub_note" placeholder="napr. GreenWay pomerná časť"></div>
+        </div>
+      </div>
     </div>
     <div class="btn-row">
       <button class="btn" onclick="showTab('prehled',null)">Zrušiť</button>
@@ -1051,10 +1072,29 @@ window.checkFirstOfMonth = function() {
 };
 
 // ── NT/VT PREVIEW ──
+window.toggleVtFields = function() {
+  const hasVt = document.getElementById('d_hasVt').checked;
+  document.getElementById('vtTimeFields').style.display = hasVt ? 'block' : 'none';
+  if (!hasVt) { document.getElementById('d_start').value=''; document.getElementById('d_end').value=''; }
+  calcNtVt();
+};
+
 window.calcNtVt = function() {
+  const hasVt = document.getElementById('d_hasVt').checked;
+  const kwh = parseFloat(document.getElementById('d_kwh').value);
+  const box = document.getElementById('ntVtPreview');
+
+  if (!hasVt) {
+    // celé v NT
+    if (!kwh) { box.innerHTML='Celé nabíjanie v NT — zadaj kWh'; box.classList.add('has-data'); return; }
+    const cost = calcCost(kwh, 0);
+    box.classList.add('has-data');
+    box.innerHTML = `Celé v NT: <span style="color:var(--nt)">${fmt(kwh,2)} kWh</span> &nbsp;=&nbsp; <strong style="color:var(--accent)">${fmt(cost,4)} €</strong>`;
+    return;
+  }
+
   const ss=document.getElementById('d_start').value, es=document.getElementById('d_end').value;
-  const kwh=parseFloat(document.getElementById('d_kwh').value), box=document.getElementById('ntVtPreview');
-  if (!ss||!es||!kwh) { box.textContent='— zadaj čas a kWh pre výpočet NT/VT rozdelenia'; box.classList.remove('has-data'); return; }
+  if (!ss||!es||!kwh) { box.innerHTML='— zadaj čas začiatku, konca a kWh'; box.classList.remove('has-data'); return; }
   const [sh,sm]=ss.split(':').map(Number), [eh,em]=es.split(':').map(Number);
   const {ntKwh,vtKwh}=splitNtVt(sh,sm,eh,em,kwh), cost=calcCost(ntKwh,vtKwh);
   box.classList.add('has-data');
@@ -1068,15 +1108,54 @@ window.toggleExtPrice = function() {
   const free = document.getElementById('v_subtype').value === 'zadarmo';
   document.getElementById('v_price_field').style.opacity = free ? '0.3' : '1';
   document.getElementById('v_price_field').style.pointerEvents = free ? 'none' : 'auto';
+  calcExtCost();
+};
+
+window.toggleSubFields = function() {
+  const has = document.getElementById('v_hasSub').checked;
+  document.getElementById('subFields').style.display = has ? 'block' : 'none';
+};
+
+window.calcExtCost = function() {
+  const box = document.getElementById('extCostPreview');
+  if (!box) return;
+  const kwh = parseFloat(document.getElementById('v_kwh').value)||0;
+  const freeKwh = parseFloat(document.getElementById('v_free_kwh').value)||0;
+  const isFreeType = document.getElementById('v_subtype').value === 'zadarmo';
+  const price = parseFloat(document.getElementById('v_price').value)||0;
+
+  if (!kwh) { box.innerHTML='— zadaj kWh a cenu pre výpočet'; box.classList.remove('has-data'); return; }
+  box.classList.add('has-data');
+
+  if (isFreeType) {
+    box.innerHTML = `Celé zadarmo: <span style="color:var(--free)">${fmt(kwh,2)} kWh</span> &nbsp;=&nbsp; <strong style="color:var(--accent)">0.00 €</strong>`;
+    return;
+  }
+  const paidKwh = Math.max(0, kwh - freeKwh);
+  const cost = paidKwh * price;
+  box.innerHTML = freeKwh>0
+    ? `<span style="color:var(--free)">${fmt(freeKwh,2)} kWh voľných</span> + <span style="color:var(--pub)">${fmt(paidKwh,2)} kWh</span> × ${price} € &nbsp;=&nbsp; <strong style="color:var(--accent)">${fmt(cost,4)} €</strong>`
+    : `${fmt(kwh,2)} kWh × ${price} € &nbsp;=&nbsp; <strong style="color:var(--accent)">${fmt(cost,4)} €</strong>`;
 };
 
 // ── ADD DOMÁCE ──
 window.addDomace = async function() {
-  const date=document.getElementById('d_date').value, ss=document.getElementById('d_start').value;
-  const es=document.getElementById('d_end').value, kwh=parseFloat(document.getElementById('d_kwh').value);
-  if (!date||!ss||!es||!kwh) { alert('Vyplň dátum, čas začiatku, konca a kWh.'); return; }
-  const [sh,sm]=ss.split(':').map(Number), [eh,em]=es.split(':').map(Number);
-  const {ntKwh,vtKwh}=splitNtVt(sh,sm,eh,em,kwh), cost=calcCost(ntKwh,vtKwh);
+  const date=document.getElementById('d_date').value;
+  const kwh=parseFloat(document.getElementById('d_kwh').value);
+  const hasVt=document.getElementById('d_hasVt').checked;
+  if (!date||!kwh) { alert('Vyplň dátum a kWh.'); return; }
+
+  let ntKwh, vtKwh, ss='', es='';
+  if (hasVt) {
+    ss=document.getElementById('d_start').value;
+    es=document.getElementById('d_end').value;
+    if (!ss||!es) { alert('Zadaj čas začiatku a konca nabíjania.'); return; }
+    const [sh,sm]=ss.split(':').map(Number), [eh,em]=es.split(':').map(Number);
+    ({ntKwh,vtKwh}=splitNtVt(sh,sm,eh,em,kwh));
+  } else {
+    ntKwh=kwh; vtKwh=0;
+  }
+  const cost=calcCost(ntKwh,vtKwh);
   const odo=parseInt(document.getElementById('d_odo').value)||null;
 
   // SoC
@@ -1089,8 +1168,10 @@ window.addDomace = async function() {
 
   await saveRecord({type:'domace',date,startTime:ss,endTime:es,ntKwh,vtKwh,cost,odo,...(socPct!=null?{socPct}:{})});
   ['d_date','d_start','d_end','d_kwh','d_odo','d_soc'].forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
-  document.getElementById('ntVtPreview').textContent='— zadaj čas a kWh pre výpočet NT/VT rozdelenia';
-  document.getElementById('ntVtPreview').classList.remove('has-data');
+  document.getElementById('d_hasVt').checked=false;
+  document.getElementById('vtTimeFields').style.display='none';
+  document.getElementById('ntVtPreview').innerHTML='Celé nabíjanie v NT — zadaj kWh';
+  document.getElementById('ntVtPreview').classList.add('has-data');
   document.getElementById('socBox').style.display='none';
   showTab('prehled',null);
 };
@@ -1103,15 +1184,32 @@ window.addExterne = async function() {
   if (!date||!kwh) { alert('Vyplň dátum a kWh.'); return; }
   const price = free ? 0 : parseFloat(document.getElementById('v_price').value)||0;
   if (!free&&!price) { alert('Zadaj jednotkovú cenu.'); return; }
-  const cost = parseFloat((kwh*price).toFixed(4));
+  const freeKwh = parseFloat(document.getElementById('v_free_kwh').value)||0;
+  const paidKwh = free ? 0 : Math.max(0, kwh - freeKwh);
+  const cost = parseFloat((paidKwh*price).toFixed(4));
   const place=document.getElementById('v_place').value;
   const odo=parseInt(document.getElementById('v_odo').value)||null;
-  const current = document.getElementById('v_current').value; // 'ac' or 'dc'
-  await saveRecord({type:free?'zadarmo':'externe',date,kwh,unitPrice:free?0:price,cost,place,odo,current});
-  ['v_date','v_kwh','v_place','v_odo'].forEach(id=>document.getElementById(id).value='');
+  const current = document.getElementById('v_current').value;
+
+  // predplatné
+  const hasSub = document.getElementById('v_hasSub').checked;
+  const subAmount = hasSub ? (parseFloat(document.getElementById('v_sub_amount').value)||0) : 0;
+  const subNote = hasSub ? document.getElementById('v_sub_note').value : '';
+
+  await saveRecord({
+    type: free?'zadarmo':'externe', date, kwh, unitPrice: free?0:price, cost, place, odo, current,
+    ...(freeKwh>0 ? {freeKwh} : {}),
+    ...(subAmount>0 ? {subAmount, subNote} : {})
+  });
+
+  ['v_date','v_kwh','v_place','v_odo','v_free_kwh','v_sub_amount','v_sub_note'].forEach(id=>{const el=document.getElementById(id); if(el) el.value='';});
   document.getElementById('v_price').value='0.38';
   document.getElementById('v_subtype').value='platene';
   document.getElementById('v_current').value='ac';
+  document.getElementById('v_hasSub').checked=false;
+  document.getElementById('subFields').style.display='none';
+  document.getElementById('extCostPreview').innerHTML='— zadaj kWh a cenu pre výpočet';
+  document.getElementById('extCostPreview').classList.remove('has-data');
   toggleExtPrice();
   showTab('prehled',null);
 };
@@ -1122,16 +1220,18 @@ window.renderOverview = async function() {
   const recs=filteredRecs(mk);
   document.getElementById('overviewMonthLabel').textContent = mk?mkLabel(mk):'všetky mesiace';
 
-  let totNt=0,totVt=0,totExt=0,totFree=0,totCost=0,totRodicov=0,totKm=0;
+  let totNt=0,totVt=0,totExt=0,totFree=0,totCost=0,totRodicov=0,totKm=0,totSub=0;
   recs.forEach(r=>{
     if (r.type==='domace') {
       totNt+=r.ntKwh||0; totVt+=r.vtKwh||0;
       if (!r.zadarmo) { totCost+=r.cost||0; totRodicov+=r.cost||0; }
-      else { totFree+=(r.ntKwh||0)+(r.vtKwh||0); } // domáce zadarmo = tiež energia
+      else { totFree+=(r.ntKwh||0)+(r.vtKwh||0); }
     }
     else if (r.type==='zadarmo') { totFree+=r.kwh||0; }
-    else { totExt+=r.kwh||0; totCost+=r.cost||0; }
+    else { totExt+=r.kwh||0; totCost+=r.cost||0; totFree+=r.freeKwh||0; }
+    totSub += r.subAmount||0;
   });
+  totCost += totSub;
 
   // km z odo — prvý odo aktuálneho mesiaca vs prvý odo nasledujúceho mesiaca
   const allWithOdo = records.filter(r=>r.odo).sort((a,b)=>a.date.localeCompare(b.date));
@@ -1287,7 +1387,8 @@ window.renderOverview = async function() {
         <div class="sum-row"><span class="sum-key" style="font-weight:500;color:var(--text)">Rodičom spolu</span><span class="sum-val accent">${fmt(totRodicov,2)} €</span></div>
       </div>
       <div>
-        <div class="sum-row"><span class="sum-key">Externé (platené)</span><span class="sum-val accent2">${fmt(totExt,2)} kWh → ${fmt(totCost-totRodicov,4)} €</span></div>
+        <div class="sum-row"><span class="sum-key">Externé (platené)</span><span class="sum-val accent2">${fmt(totExt,2)} kWh → ${fmt(totCost-totRodicov-totSub,4)} €</span></div>
+        ${totSub>0?`<div class="sum-row"><span class="sum-key">Predplatné</span><span class="sum-val" style="color:var(--pub)">${fmt(totSub,2)} €</span></div>`:''}
         ${totFree>0?`<div class="sum-row"><span class="sum-key">Zadarmo</span><span class="sum-val" style="color:var(--free)">${fmt(totFree,2)} kWh</span></div>`:''}
         <div class="sum-row"><span class="sum-key" style="font-weight:500;color:var(--text)">Celkové náklady</span><span class="sum-val" style="font-size:15px">${fmt(totCost,2)} €</span></div>
         ${cPer100!=null?`<div class="sum-row"><span class="sum-key">€/100 km</span><span class="sum-val">${fmt(cPer100,3)} €</span></div>`:''}
@@ -1319,9 +1420,9 @@ window.renderRecords = function() {
       kwhCell=fmt(r.kwh,2); ntCell='<td>—</td>'; vtCell='<td>—</td>';
       costCell='<span style="color:var(--muted)">—</span>'; parentCell='<span style="color:var(--muted)">—</span>';
     } else {
-      typeCell=`<span class="badge b-pub">Ext.</span>${r.place?' <small style="color:var(--muted)">'+r.place+'</small>':''}`;
+      typeCell=`<span class="badge b-pub">Ext.</span>${r.place?' <small style="color:var(--muted)">'+r.place+'</small>':''}${r.freeKwh?' <small style="color:var(--free)">('+r.freeKwh+' voľ.)</small>':''}${r.subAmount?' <small style="color:var(--pub)">+'+fmt(r.subAmount,2)+'€ predpl.</small>':''}`;
       kwhCell=fmt(r.kwh,2); ntCell='<td>—</td>'; vtCell='<td>—</td>';
-      costCell=fmt(r.cost,4); parentCell='<span style="color:var(--muted)">—</span>';
+      costCell=fmt((r.cost||0)+(r.subAmount||0),4); parentCell='<span style="color:var(--muted)">—</span>';
     }
     const socCell = r.socPct!=null ? `<span style="color:var(--accent)">${r.socPct}%</span>` : '—';
     return `<tr>
@@ -1408,6 +1509,14 @@ window.openEdit = function(id) {
       <div class="form-grid g2">
         <div class="field"><label>Cena €/kWh</label><input type="number" id="e_price" step="0.001" value="${r.unitPrice||0}"></div>
         <div class="field"><label>Miesto</label><input type="text" id="e_place" value="${r.place||''}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>Odometer km</label><input type="number" id="e_odo" value="${r.odo||''}"></div>
+        <div class="field"><label>Z toho voľných kWh</label><input type="number" id="e_free_kwh" step="0.1" min="0" value="${r.freeKwh||''}"></div>
+      </div>
+      <div class="form-grid g2">
+        <div class="field"><label>Predplatné €</label><input type="number" id="e_sub_amount" step="0.01" min="0" value="${r.subAmount||''}"></div>
+        <div class="field"><label>Poznámka k predplatnému</label><input type="text" id="e_sub_note" value="${r.subNote||''}"></div>
       </div>`;
   }
 
@@ -1448,10 +1557,14 @@ window.saveEdit = async function() {
     const subtype=document.getElementById('e_subtype').value;
     const current=document.getElementById('e_current').value;
     const price=parseFloat(document.getElementById('e_price').value)||0;
-    const cost=parseFloat((kwh*price).toFixed(4));
+    const freeKwh=parseFloat(document.getElementById('e_free_kwh').value)||0;
+    const paidKwh = subtype==='zadarmo' ? 0 : Math.max(0, kwh-freeKwh);
+    const cost=parseFloat((paidKwh*price).toFixed(4));
     const place=document.getElementById('e_place').value;
     const odo=parseInt(document.getElementById('e_odo').value)||null;
-    updated={date,type:subtype,kwh,unitPrice:price,cost,place,odo,current};
+    const subAmount=parseFloat(document.getElementById('e_sub_amount').value)||0;
+    const subNote=document.getElementById('e_sub_note').value||'';
+    updated={date,type:subtype,kwh,unitPrice:price,cost,place,odo,current,freeKwh,subAmount,subNote};
   }
 
   try {
