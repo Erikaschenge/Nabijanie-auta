@@ -638,14 +638,77 @@ body.theme-b .info-box { color: #039e97; }
 
 /* ── RESPONSIVE ── */
 @media(max-width:640px){
-  .metrics{grid-template-columns:1fr 1fr}
-  .form-grid.g2,.form-grid.g3,.form-grid.g4{grid-template-columns:1fr}
-  .summary-grid{grid-template-columns:1fr}
-  header{flex-direction:column;align-items:flex-start}
-  .header-right{align-items:flex-start}
-  .soc-toggle{flex-wrap:wrap}
+  html, body { overflow-x: hidden; max-width: 100vw; }
+  .shell { padding: 0 14px 80px; max-width: 100vw; }
+
+  /* header — kompaktnejší */
+  header { flex-direction: column; align-items: flex-start; padding: 20px 0 16px; gap: 12px; }
+  .header-right { align-items: flex-start; width: 100%; }
+  .logo-icon { width: 38px; height: 38px; font-size: 18px; }
+  .logo-text h1 { font-size: 18px; letter-spacing: .08em; }
+  .logo-text p { font-size: 9px; }
+  .header-rates { font-size: 9px; line-height: 1.7; text-align: left; }
+  .theme-switcher { gap: 4px; }
+  .theme-btn { width: 24px; height: 24px; font-size: 9px; }
+  .sync-status { font-size: 10px; }
+
+  /* taby — horizontálny scroll */
+  .tabs {
+    margin: 16px 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    flex-wrap: nowrap;
+  }
+  .tabs::-webkit-scrollbar { display: none; }
+  .tab { padding: 9px 13px; font-size: 11px; letter-spacing: .06em; white-space: nowrap; flex-shrink: 0; }
+
+  /* metriky — 2 stĺpce, kompaktné */
+  .metrics { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+  .metric { padding: 12px 11px; }
+  .metric .lbl { font-size: 8px; letter-spacing: .1em; margin-bottom: 6px; }
+  .metric .val { font-size: 19px; }
+  .metric .sub { font-size: 8px; margin-top: 5px; }
+
+  /* karty */
+  .card { padding: 14px 14px; margin-bottom: 10px; }
+  .card-title { font-size: 8px; margin-bottom: 12px; }
+  .sec-title { font-size: 15px; margin-bottom: 14px; }
+
+  /* formuláre — jeden stĺpec */
+  .form-grid { gap: 10px; margin-bottom: 12px; }
+  .form-grid.g2, .form-grid.g3, .form-grid.g4 { grid-template-columns: 1fr; }
+  .field label { font-size: 8px; margin-bottom: 5px; }
+  .field input, .field select { padding: 9px 11px; font-size: 16px; }
+
+  /* sumáre */
+  .summary-grid { grid-template-columns: 1fr; gap: 14px; }
+  .sum-row { font-size: 12px; padding: 6px 0; flex-wrap: wrap; gap: 4px; }
+  .sum-val { font-size: 11px; }
+  .sum-val.accent { font-size: 13px; }
+
+  /* tabuľky */
+  table { font-size: 11px; }
+  th { font-size: 8px; padding: 5px 6px; }
+  td { padding: 7px 6px; font-size: 11px; }
+
+  /* tlačidlá */
+  .btn { padding: 9px 16px; font-size: 10px; }
+  .btn-row { gap: 8px; }
+  .soc-toggle { flex-wrap: wrap; gap: 6px; }
+  .soc-btn { padding: 6px 12px; font-size: 10px; }
+
+  /* náhľady */
+  .nt-preview { font-size: 10px; padding: 9px 11px; }
+  .info-box { font-size: 10px; padding: 9px 11px; line-height: 1.6; }
+  .filter-label { font-size: 9px; }
+  select { font-size: 11px; padding: 7px 11px; }
 }
-@media(max-width:400px){.metrics{grid-template-columns:1fr}}
+@media(max-width:400px){
+  .metrics{grid-template-columns:1fr}
+  .logo-text h1 { font-size: 16px; }
+}
 </style>
 </head>
 <body>
