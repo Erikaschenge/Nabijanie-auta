@@ -151,6 +151,97 @@ body.theme-f .card {
 }
 body.theme-f .metric .lbl, body.theme-f .card-title { color: rgba(255,255,255,0.7); }
 body.theme-f .metric::after { background: transparent; }
+
+/* ── TILE THEME G: čistý svetlý (wallbox app štýl) ── */
+body.theme-g {
+  background: #f4fafb !important;
+  color: #0f2b33;
+}
+body.theme-g .headlight-strip { display: none; }
+body.theme-g .shell { padding-top: 8px; }
+body.theme-g header::after { background: #e2eef1; }
+body.theme-g .logo-icon {
+  background: linear-gradient(135deg, #00b8d4, #0097b2);
+  box-shadow: 0 4px 14px rgba(0,150,180,0.25);
+  border: none; border-radius: 12px;
+}
+body.theme-g .logo-text h1 { color: #0f2b33; }
+body.theme-g .logo-text p, body.theme-g .header-rates { color: #6b8a94; }
+body.theme-g .header-rates span { color: #0097b2; font-weight: 700; }
+body.theme-g .sync-status { color: #6b8a94; }
+body.theme-g .sync-dot.ok { background: #00b8d4; box-shadow: none; }
+
+body.theme-g .tabs { border-bottom: 1px solid #e2eef1; }
+body.theme-g .tab { color: #6b8a94; }
+body.theme-g .tab:hover { color: #0097b2; }
+body.theme-g .tab.active { color: #0097b2; border-bottom-color: #00b8d4; text-shadow: none; }
+
+body.theme-g .metric,
+body.theme-g .card {
+  background: #fff;
+  border: 1px solid #e2eef1;
+  border-radius: 14px;
+  box-shadow: 0 1px 3px rgba(15,43,51,0.04);
+  backdrop-filter: none; -webkit-backdrop-filter: none;
+}
+body.theme-g .metric::before, body.theme-g .card::before { display: none; }
+body.theme-g .metric::after { display: none; }
+body.theme-g .metric .lbl, body.theme-g .card-title { color: #8aa4ac; }
+body.theme-g .metric .val { color: #0097b2; }
+body.theme-g .metric .sub { color: #8aa4ac; }
+
+body.theme-g th { background: #f4fafb; color: #8aa4ac; border-bottom-color: #e2eef1; }
+body.theme-g td { color: #0f2b33; border-bottom-color: #eef5f7; }
+body.theme-g tr:hover td { background: #f9fdfd; }
+
+body.theme-g .sum-key { color: #6b8a94; }
+body.theme-g .sum-val { color: #0f2b33; }
+body.theme-g .sum-val.accent { color: #0097b2; }
+body.theme-g .sum-val.accent2 { color: #00a896; }
+body.theme-g .sum-row { border-bottom-color: #eef5f7; }
+
+body.theme-g .field label { color: #8aa4ac; }
+body.theme-g .field input, body.theme-g .field select, body.theme-g select {
+  background: #f9fdfd; border-color: #dbeaee; color: #0f2b33; border-radius: 10px;
+}
+body.theme-g .field input:focus, body.theme-g .field select:focus, body.theme-g select:focus {
+  border-color: #00b8d4; box-shadow: 0 0 0 3px rgba(0,184,212,0.1);
+}
+body.theme-g select option { background: #fff; color: #0f2b33; }
+body.theme-g .filter-label { color: #8aa4ac; }
+
+body.theme-g .btn { color: #6b8a94; border-color: #dbeaee; border-radius: 10px; }
+body.theme-g .btn:hover { color: #0097b2; border-color: #00b8d4; background: #f0fbfd; }
+body.theme-g .btn-accent { background: #00b8d4; color: #fff; border-color: #00b8d4; box-shadow: 0 2px 8px rgba(0,184,212,0.25); }
+body.theme-g .btn-accent:hover { background: #0097b2; border-color: #0097b2; }
+body.theme-g .btn-danger { color: #e05a6a; }
+body.theme-g .theme-btn { border-color: #dbeaee; background: #f9fdfd; color: #6b8a94; }
+body.theme-g .theme-btn.active { background: #00b8d4; color: #fff; border-color: #00b8d4; }
+
+body.theme-g .soc-box { background: #f0fbfd; border-color: #cceff5; border-radius: 12px; }
+body.theme-g .soc-box::before { display: none; }
+body.theme-g .soc-box .soc-title { color: #0097b2; }
+body.theme-g .soc-btn { border-color: #dbeaee; color: #6b8a94; border-radius: 10px; }
+body.theme-g .soc-btn:hover { color: #0097b2; border-color: #00b8d4; }
+body.theme-g .soc-btn.active { background: #00b8d4; color: #fff; border-color: #00b8d4; }
+
+body.theme-g .nt-preview { background: #f9fdfd; border-color: #e2eef1; color: #6b8a94; border-radius: 10px; }
+body.theme-g .nt-preview.has-data { background: #f0fbfd; border-color: #cceff5; color: #0f2b33; }
+body.theme-g .info-box { background: #f0fbfd; border-color: #cceff5; color: #6b8a94; border-radius: 10px; }
+body.theme-g .info-box strong { color: #0097b2; }
+body.theme-g .sec-title { color: #0f2b33; }
+body.theme-g .empty { color: #b0c4ca; }
+
+body.theme-g .modal { background: #fff; border-color: #e2eef1; border-radius: 16px; box-shadow: 0 20px 50px rgba(15,43,51,0.15); }
+body.theme-g .modal::before { display: none; }
+body.theme-g .modal-title { color: #0f2b33; }
+body.theme-g .modal-overlay { background: rgba(15,43,51,0.4); }
+
+body.theme-g .b-nt { background: #e6f9f5; color: #00806e; border-color: #b8ebe2; }
+body.theme-g .b-vt { background: #fff2e6; color: #c26810; border-color: #ffd9b3; }
+body.theme-g .b-mixed { background: #fff8e6; color: #a37800; border-color: #ffe9b3; }
+body.theme-g .b-pub { background: #eef0ff; color: #4a51c4; border-color: #d4d8ff; }
+body.theme-g .b-free { background: #e6fbf3; color: #00875a; border-color: #b3f0d9; }
 .headlight-strip {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -534,7 +625,13 @@ tr:hover td { background: rgba(0,200,170,0.04); }
   text-transform: uppercase;
 }
 .soc-btn:hover { color: var(--accent); border-color: var(--accent); }
-.soc-btn.active { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; box-shadow: 0 4px 14px rgba(0,200,170,0.25); }
+.soc-btn.active { background: #026d9d; color: #fff; border-color: #026d9d; font-weight: 700; box-shadow: 0 4px 14px rgba(0,80,120,0.3); }
+/* soc-btn active per theme */
+body.theme-a .soc-btn.active, body.theme-c .soc-btn.active,
+body.theme-d .soc-btn.active, body.theme-f .soc-btn.active
+  { background: rgba(0,0,0,0.55); color: #fff; border-color: rgba(255,255,255,0.5); }
+body.theme-b .soc-btn.active { background: #026d9d; color: #fff; border-color: #026d9d; }
+body.theme-e .soc-btn.active { background: #026d9d; color: #fff; border-color: rgba(100,200,220,0.4); }
 
 /* ── BUTTONS ── */
 .btn-row { display: flex; justify-content: flex-end; gap: 10px; }
@@ -733,6 +830,7 @@ body.theme-b .info-box { color: #039e97; }
         <button class="theme-btn" onclick="setTheme('d',this)">D</button>
         <button class="theme-btn" onclick="setTheme('e',this)">E</button>
         <button class="theme-btn" onclick="setTheme('f',this)">F</button>
+        <button class="theme-btn" onclick="setTheme('g',this)">G</button>
       </div>
       <div class="sync-status">
         <div class="sync-dot loading" id="syncDot"></div>
@@ -1751,7 +1849,7 @@ window.saveInterim = async function(mk) {
 
 // ── THEME SWITCHER ──
 window.setTheme = function(t, btn) {
-  document.body.className = document.body.className.replace(/theme-[a-f]/g, '').trim();
+  document.body.className = document.body.className.replace(/theme-[a-g]/g, '').trim();
   document.body.classList.add('theme-'+t);
   document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
@@ -1761,7 +1859,7 @@ window.setTheme = function(t, btn) {
   const saved = (() => { try { return localStorage.getItem('ev_theme'); } catch(e){} })() || 'a';
   document.body.classList.add('theme-'+saved);
   setTimeout(()=>{
-    const btn = document.querySelector(`.theme-btn:nth-child(${['a','b','c','d','e','f'].indexOf(saved)+1})`);
+    const btn = document.querySelector(`.theme-btn:nth-child(${['a','b','c','d','e','f','g'].indexOf(saved)+1})`);
     if (btn) { document.querySelectorAll('.theme-btn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
   }, 0);
 })();
